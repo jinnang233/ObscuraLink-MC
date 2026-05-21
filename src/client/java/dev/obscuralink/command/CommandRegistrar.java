@@ -5,8 +5,10 @@ import dev.obscuralink.chat.ChatSendService;
 import dev.obscuralink.config.ObscuraLinkConfig;
 import dev.obscuralink.model.PublicIdentity;
 import dev.obscuralink.model.SessionRecord;
+import dev.obscuralink.model.TrustState;
 import dev.obscuralink.service.DecryptionHistoryService;
 import dev.obscuralink.service.KeyStoreService;
+import dev.obscuralink.service.KeyTrustService;
 import dev.obscuralink.service.SessionService;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -26,8 +28,8 @@ public final class CommandRegistrar {
     }
 
     public static void register(ChatSendService chatSendService, KeyStoreService keyStoreService,
-                                SessionService sessionService, DecryptionHistoryService decryptionHistoryService,
-                                ObscuraLinkConfig config) {
+                                KeyTrustService keyTrustService, SessionService sessionService,
+                                DecryptionHistoryService decryptionHistoryService, ObscuraLinkConfig config) {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 ClientCommandManager.literal("enc")
                         .then(ClientCommandManager.literal("tell")
@@ -76,7 +78,7 @@ public final class CommandRegistrar {
                                 .then(ClientCommandManager.argument("player", StringArgumentType.word())
                                         .executes(ctx -> {
                                             showStatus(ctx.getSource(), StringArgumentType.getString(ctx, "player"),
-                                                    keyStoreService, sessionService, decryptionHistoryService, config);
+                                                    keyStoreService, keyTrustService, sessionService, decryptionHistoryService, config);
                                             return 1;
                                         })))
                                 .then(ClientCommandManager.literal("key")
@@ -133,23 +135,91 @@ public final class CommandRegistrar {
                                                             try {
                                                                 keyStoreService.importPublicIdentity(player,
                                                                         StringArgumentType.getString(ctx, "data_or_file"));
+                                                                keyTrustService.markTofuTrusted(player);
                                                                 feedback(ctx.getSource(), "Imported public key for " + player + " with TOFU trust.");
                                                             } catch (Exception e) {
                                                                 feedback(ctx.getSource(), "ERROR: " + e.getMessage());
                                                                 return 0;
                                                             }
                                                             return 1;
-                                                        })))))
+                                                        }))))
+                                .then(ClientCommandManager.literal("confirm")
+                                        .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    String player = StringArgumentType.getString(ctx, "player");
+                                                    try {
+                                                        keyStoreService.findPublicIdentity(player)
+                                                                .orElseThrow(() -> new IllegalStateException("No public key for " + player));
+                                                        keyTrustService.markVerified(player);
+                                                        feedback(ctx.getSource(), "Confirmed fingerprint for " + player + ".");
+                                                    } catch (Exception e) {
+                                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                        return 0;
+                                                    }
+                                                    return 1;
+                                                })))
+                                .then(ClientCommandManager.literal("verify")
+                                        .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                                                .then(ClientCommandManager.argument("fingerprint", StringArgumentType.word())
+                                                        .executes(ctx -> {
+                                                            String player = StringArgumentType.getString(ctx, "player");
+                                                            String fingerprint = StringArgumentType.getString(ctx, "fingerprint");
+                                                            try {
+                                                                PublicIdentity identity = keyStoreService.findPublicIdentity(player)
+                                                                        .orElseThrow(() -> new IllegalStateException("No public key for " + player));
+                                                                if (!keyTrustService.fingerprintMatches(identity, fingerprint)) {
+                                                                    feedback(ctx.getSource(), "ERROR: fingerprint does not match " + player + ".");
+                                                                    return 0;
+                                                                }
+                                                                keyTrustService.markVerified(player);
+                                                                feedback(ctx.getSource(), "Verified fingerprint for " + player + ".");
+                                                            } catch (Exception e) {
+                                                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                                return 0;
+                                                            }
+                                                            return 1;
+                                                        }))))
+                                .then(ClientCommandManager.literal("trust")
+                                        .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    String player = StringArgumentType.getString(ctx, "player");
+                                                    try {
+                                                        keyStoreService.findPublicIdentity(player)
+                                                                .orElseThrow(() -> new IllegalStateException("No public key for " + player));
+                                                        keyTrustService.markTofuTrusted(player);
+                                                        feedback(ctx.getSource(), "Marked " + player + " as TOFU trusted.");
+                                                    } catch (Exception e) {
+                                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                        return 0;
+                                                    }
+                                                    return 1;
+                                                })))
+                                .then(ClientCommandManager.literal("distrust")
+                                        .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    String player = StringArgumentType.getString(ctx, "player");
+                                                    try {
+                                                        keyStoreService.findPublicIdentity(player)
+                                                                .orElseThrow(() -> new IllegalStateException("No public key for " + player));
+                                                        keyTrustService.markDistrusted(player);
+                                                        feedback(ctx.getSource(), "Marked " + player + " as distrusted.");
+                                                    } catch (Exception e) {
+                                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                        return 0;
+                                                    }
+                                                    return 1;
+                                                })))))
         ));
     }
 
     private static void showStatus(FabricClientCommandSource source, String player, KeyStoreService keyStoreService,
-                                   SessionService sessionService, DecryptionHistoryService decryptionHistoryService,
+                                   KeyTrustService keyTrustService, SessionService sessionService, DecryptionHistoryService decryptionHistoryService,
                                    ObscuraLinkConfig config) {
         try {
             Optional<PublicIdentity> identity = keyStoreService.findPublicIdentity(player);
             Optional<SessionRecord> session = sessionService.find(player);
-            String keyStatus = identity.map(value -> "已导入 / TOFU 已信任").orElse("未导入");
+            TrustState trustState = keyTrustService.trustState(player, identity.isPresent());
+            String keyStatus = identity.map(value -> "已导入 / " + trustState).orElse("未导入");
             String signatureStatus = identity.map(value -> value.signaturePublicKey() == null ? "不可用" : "可用").orElse("不可用");
             String sessionStatus = session.map(value -> "已建立，sessionId=" + value.sessionId()).orElse("未建立");
             String lastDecrypt = decryptionHistoryService.lastSuccess(player)

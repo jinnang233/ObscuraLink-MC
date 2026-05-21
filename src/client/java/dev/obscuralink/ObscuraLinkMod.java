@@ -10,6 +10,7 @@ import dev.obscuralink.fragment.FragmentService;
 import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.service.DecryptionHistoryService;
 import dev.obscuralink.service.KeyStoreService;
+import dev.obscuralink.service.KeyTrustService;
 import dev.obscuralink.service.SessionService;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
@@ -36,6 +37,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
     private KeyStoreService keyStoreService;
     private SessionService sessionService;
     private DecryptionHistoryService decryptionHistoryService;
+    private KeyTrustService keyTrustService;
     private ChatSendService chatSendService;
     private ChatReceiveHandler chatReceiveHandler;
 
@@ -57,6 +59,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
         keyStoreService = new KeyStoreService(root, cryptoService);
         sessionService = new SessionService(root);
         decryptionHistoryService = new DecryptionHistoryService(root);
+        keyTrustService = new KeyTrustService(root);
 
         MinecraftClient client = MinecraftClient.getInstance();
         String owner = client.getSession().getUsername();
@@ -69,12 +72,12 @@ public final class ObscuraLinkMod implements ClientModInitializer {
             return;
         }
 
-        chatSendService = new ChatSendService(config, keyStoreService, sessionService, cryptoService, packetCodec,
+        chatSendService = new ChatSendService(config, keyStoreService, keyTrustService, sessionService, cryptoService, packetCodec,
                 fragmentService, this::sendChatLine, this::system);
         chatReceiveHandler = new ChatReceiveHandler(config, keyStoreService, cryptoService, packetCodec, fragmentService,
                 reassembler, decryptionHistoryService, this::system);
 
-        CommandRegistrar.register(chatSendService, keyStoreService, sessionService, decryptionHistoryService, config);
+        CommandRegistrar.register(chatSendService, keyStoreService, keyTrustService, sessionService, decryptionHistoryService, config);
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             String senderName = sender == null ? "unknown" : sender.getName();
             String raw = message.getString();

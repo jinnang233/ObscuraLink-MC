@@ -6,8 +6,10 @@ import dev.obscuralink.fragment.FragmentService;
 import dev.obscuralink.model.EncryptedPacket;
 import dev.obscuralink.model.PublicIdentity;
 import dev.obscuralink.model.SessionRecord;
+import dev.obscuralink.model.TrustState;
 import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.service.KeyStoreService;
+import dev.obscuralink.service.KeyTrustService;
 import dev.obscuralink.service.SessionService;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.function.Consumer;
 public final class ChatSendService {
     private final ObscuraLinkConfig config;
     private final KeyStoreService keyStoreService;
+    private final KeyTrustService keyTrustService;
     private final SessionService sessionService;
     private final CryptoService cryptoService;
     private final PacketCodec packetCodec;
@@ -23,11 +26,13 @@ public final class ChatSendService {
     private final Consumer<String> chatSender;
     private final Consumer<String> system;
 
-    public ChatSendService(ObscuraLinkConfig config, KeyStoreService keyStoreService, SessionService sessionService,
+    public ChatSendService(ObscuraLinkConfig config, KeyStoreService keyStoreService, KeyTrustService keyTrustService,
+                           SessionService sessionService,
                            CryptoService cryptoService, PacketCodec packetCodec, FragmentService fragmentService,
                            Consumer<String> chatSender, Consumer<String> system) {
         this.config = config;
         this.keyStoreService = keyStoreService;
+        this.keyTrustService = keyTrustService;
         this.sessionService = sessionService;
         this.cryptoService = cryptoService;
         this.packetCodec = packetCodec;
@@ -40,6 +45,7 @@ public final class ChatSendService {
         try {
             PublicIdentity identity = keyStoreService.findPublicIdentity(receiver)
                     .orElseThrow(() -> new IllegalStateException("No public key for " + receiver + ". Use /enc key import first."));
+            ensureSendAllowed(receiver, identity);
             EncryptedPacket packet = cryptoService.encryptFor(identity, keyStoreService.local(),
                     keyStoreService.local().kemPublicKey().owner(), message, sign);
             sendPacket(packet);
@@ -53,6 +59,7 @@ public final class ChatSendService {
         try {
             PublicIdentity identity = keyStoreService.findPublicIdentity(receiver)
                     .orElseThrow(() -> new IllegalStateException("No public key for " + receiver + ". Use /enc key import first."));
+            ensureSendAllowed(receiver, identity);
             SessionRecord record = sessionService.createLocalSession(receiver, identity.kemPublicKey().fingerprint());
             sendKemMessage(receiver, "/session " + record.sessionId() + " " + record.secret(), true);
             system.accept("[ObscuraLink] Session material prepared for " + receiver + ".");
@@ -81,6 +88,17 @@ public final class ChatSendService {
         }, "ObscuraLink Sender");
         sender.setDaemon(true);
         sender.start();
+    }
+
+    private void ensureSendAllowed(String receiver, PublicIdentity identity) throws Exception {
+        TrustState trustState = keyTrustService.trustState(receiver, true);
+        if (trustState == TrustState.DISTRUSTED) {
+            throw new IllegalStateException("Public key for " + receiver + " is distrusted. Refusing to send.");
+        }
+        if (trustState == TrustState.TOFU_TRUSTED) {
+            system.accept("[ObscuraLink] Encrypted send allowed, but " + identity.owner()
+                    + "'s fingerprint has not been manually verified.");
+        }
     }
 
     private static void sleep(int millis) {
