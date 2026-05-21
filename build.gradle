@@ -10,6 +10,11 @@ base {
     archivesName = project.archives_base_name
 }
 
+repositories {
+    maven { url = "https://maven.shedaniel.me/" }
+    mavenCentral()
+}
+
 loom {
     splitEnvironmentSourceSets()
 
