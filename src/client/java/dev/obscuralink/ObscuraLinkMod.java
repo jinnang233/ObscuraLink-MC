@@ -88,12 +88,16 @@ public final class ObscuraLinkMod implements ClientModInitializer {
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             String senderName = sender == null ? "unknown" : sender.getName();
             String raw = message.getString();
-            chatReceiveHandler.handle(senderName, raw);
+            if (!isLocalSender(senderName, owner)) {
+                chatReceiveHandler.handle(senderName, raw);
+            }
             return !chatReceiveHandler.shouldHide(raw);
         });
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
             Optional<ShadowMessage> shadowMessage = extractShadowMessage(message.getString());
-            shadowMessage.ifPresent(value -> chatReceiveHandler.handle(value.player(), value.message()));
+            shadowMessage
+                    .filter(value -> !isLocalSender(value.player(), owner))
+                    .ifPresent(value -> chatReceiveHandler.handle(value.player(), value.message()));
             return shadowMessage.map(value -> !chatReceiveHandler.shouldHide(value.message())).orElse(true);
         });
         LOGGER.info("ObscuraLink initialized");
@@ -134,6 +138,10 @@ public final class ObscuraLinkMod implements ClientModInitializer {
             LOGGER.warn("Invalid ObscuraLink shadow listen regex: {}", config.shadowListenRegex, e);
             return Optional.empty();
         }
+    }
+
+    private static boolean isLocalSender(String senderName, String localName) {
+        return senderName != null && localName != null && senderName.equalsIgnoreCase(localName);
     }
 
     private record ShadowMessage(String player, String message) {
