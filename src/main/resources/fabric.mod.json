@@ -13,6 +13,9 @@
   "entrypoints": {
     "client": [
       "dev.obscuralink.ObscuraLinkMod"
+    ],
+    "modmenu": [
+      "dev.obscuralink.config.ObscuraLinkModMenu"
     ]
   },
   "depends": {
@@ -22,13 +25,15 @@
     "fabric-api": "*",
     "cloth-config": "*"
   },
+  "suggests": {
+    "modmenu": "*"
+  },
   "custom": {
     "modmenu": {
       "links": {
-        "modmenu.github": "https://github.com/jinnang233/ObscuraLink",
-        "modmenu.modrinth": "https://modrinth.com/mod/obscuralink"
+        "modmenu.github": "https://github.com/jinnang233/ObscuraLink"
       },
-      "update_checker": true
+      "update_checker": false
     }
   }
 }

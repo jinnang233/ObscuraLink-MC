@@ -9,5 +9,8 @@
   "text.autoconfig.obscuralink.option.receiveRegex": "Receive Regex",
   "text.autoconfig.obscuralink.option.kemAlgorithm": "KEM Algorithm",
   "text.autoconfig.obscuralink.option.signatureAlgorithm": "Signature Algorithm",
-  "text.autoconfig.obscuralink.option.aeadAlgorithm": "AEAD Algorithm"
+  "text.autoconfig.obscuralink.option.aeadAlgorithm": "AEAD Algorithm",
+  "modmenu.nameTranslation.obscuralink": "ObscuraLink",
+  "modmenu.descriptionTranslation.obscuralink": "Post-quantum encrypted Minecraft chat over ordinary chat fragments.",
+  "modmenu.summaryTranslation.obscuralink": "Post-quantum encrypted Minecraft chat."
 }

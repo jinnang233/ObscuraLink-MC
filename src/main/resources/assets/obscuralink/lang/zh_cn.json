@@ -9,5 +9,8 @@
   "text.autoconfig.obscuralink.option.receiveRegex": "接收正则表达式",
   "text.autoconfig.obscuralink.option.kemAlgorithm": "KEM 算法",
   "text.autoconfig.obscuralink.option.signatureAlgorithm": "签名算法",
-  "text.autoconfig.obscuralink.option.aeadAlgorithm": "AEAD 算法"
+  "text.autoconfig.obscuralink.option.aeadAlgorithm": "AEAD 算法",
+  "modmenu.nameTranslation.obscuralink": "ObscuraLink",
+  "modmenu.descriptionTranslation.obscuralink": "通过普通 Minecraft 聊天分片传输的后量子加密聊天 Mod。",
+  "modmenu.summaryTranslation.obscuralink": "后量子加密 Minecraft 聊天。"
 }
