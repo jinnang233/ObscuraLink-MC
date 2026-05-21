@@ -10,8 +10,8 @@ public final class ObscuraLinkConfig implements ConfigData {
     public boolean hideEncryptedRawMessage = true;
     public boolean verboseMessages = false;
 
-    @ConfigEntry.BoundedDiscrete(min = 128, max = 900)
-    public int fragmentSize = 680;
+    @ConfigEntry.BoundedDiscrete(min = 64, max = 200)
+    public int fragmentSize = 180;
 
     @ConfigEntry.BoundedDiscrete(min = 0, max = 5000)
     public int sendDelayMs = 250;

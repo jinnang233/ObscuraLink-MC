@@ -39,6 +39,23 @@ final class FragmentServiceTest {
     }
 
     @Test
+    void capsFragmentsToMinecraftChatLimit() {
+        FragmentService service = new FragmentService();
+        byte[] packet = new byte[3000];
+        for (int i = 0; i < packet.length; i++) {
+            packet[i] = (byte) i;
+        }
+
+        List<String> lines = service.fragment(packet, fixedId(), 680);
+
+        assertTrue(lines.size() > 1);
+        for (String line : lines) {
+            assertTrue(line.length() <= FragmentService.MAX_CHAT_MESSAGE_LENGTH,
+                    "fragment length was " + line.length());
+        }
+    }
+
+    @Test
     void cleanupRemovesTimedOutMessages() {
         MutableClock clock = new MutableClock();
         FragmentReassembler reassembler = new FragmentReassembler(clock, Duration.ofSeconds(1), 10, 10);
