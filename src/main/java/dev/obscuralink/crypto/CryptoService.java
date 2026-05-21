@@ -63,7 +63,7 @@ public final class CryptoService {
     public LocalKeyMaterial generateLocalKeys(String owner, String uuid) throws CryptoException {
         try {
             KeyPairGenerator kemGenerator = KeyPairGenerator.getInstance("CMCE", BCPQC);
-            kemGenerator.initialize(CMCEParameterSpec.mceliece348864r3, secureRandom);
+            kemGenerator.initialize(CMCEParameterSpec.mceliece348864, secureRandom);
             KeyPair kem = kemGenerator.generateKeyPair();
 
             KeyPairGenerator sigGenerator = KeyPairGenerator.getInstance("Falcon", BCPQC);
@@ -72,8 +72,8 @@ public final class CryptoService {
 
             Instant now = Instant.now();
             return new LocalKeyMaterial(
-                    keyRecord("CMCE/mceliece348864r3/public", owner, uuid, now, kem.getPublic().getEncoded()),
-                    keyRecord("CMCE/mceliece348864r3/private", owner, uuid, now, kem.getPrivate().getEncoded()),
+                    keyRecord("CMCE/mceliece348864/public", owner, uuid, now, kem.getPublic().getEncoded()),
+                    keyRecord("CMCE/mceliece348864/private", owner, uuid, now, kem.getPrivate().getEncoded()),
                     keyRecord("Falcon-512/public", owner, uuid, now, sig.getPublic().getEncoded()),
                     keyRecord("Falcon-512/private", owner, uuid, now, sig.getPrivate().getEncoded())
             );
