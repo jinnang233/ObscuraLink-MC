@@ -1,5 +1,5 @@
 {
-  "text.autoconfig.obscuralink.title": "ObscuraLink",
+  "text.autoconfig.obscuralink.title": "ObscuraLink-MC",
   "text.autoconfig.obscuralink.option.showProgress": "送信進捗を表示",
   "text.autoconfig.obscuralink.option.hideEncryptedRawMessage": "暗号化された生メッセージを隠す",
   "text.autoconfig.obscuralink.option.verboseMessages": "詳細メッセージ",

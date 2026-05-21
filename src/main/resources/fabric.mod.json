@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "id": "obscuralink",
+  "id": "obscuralink-mc",
   "version": "${version}",
-  "name": "ObscuraLink",
+  "name": "ObscuraLink-MC",
   "description": "Post-quantum encrypted chat over Minecraft chat fragments.",
   "authors": ["ObscuraLink contributors"],
   "contact": {
-    "sources": "https://github.com/jinnang233/ObscuraLink"
+    "sources": "https://github.com/jinnang233/ObscuraLink-MC"
   },
   "license": "0BSD",
   "environment": "client",
