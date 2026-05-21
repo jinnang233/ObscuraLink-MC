@@ -18,6 +18,8 @@ public final class ObscuraLinkConfig implements ConfigData {
 
     public boolean receiveRegexMode = false;
     public String receiveRegex = "^\\[OBSCURA\\] .+";
+    public boolean shadowListenMode = false;
+    public String shadowListenRegex = "^<(?<player>[^>]+)>\\s*(?<message>.*)$";
     public String kemAlgorithm = "CMCE/mceliece348864";
     public String signatureAlgorithm = "Falcon-512";
     public String aeadAlgorithm = "AES-256-GCM";

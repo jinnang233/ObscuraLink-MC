@@ -21,6 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class ObscuraLinkMod implements ClientModInitializer {
     public static final String MOD_ID = "obscuralink";
@@ -75,6 +78,11 @@ public final class ObscuraLinkMod implements ClientModInitializer {
             chatReceiveHandler.handle(senderName, raw);
             return !chatReceiveHandler.shouldHide(raw);
         });
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+            Optional<ShadowMessage> shadowMessage = extractShadowMessage(message.getString());
+            shadowMessage.ifPresent(value -> chatReceiveHandler.handle(value.player(), value.message()));
+            return shadowMessage.map(value -> !chatReceiveHandler.shouldHide(value.message())).orElse(true);
+        });
         LOGGER.info("ObscuraLink initialized");
     }
 
@@ -92,5 +100,29 @@ public final class ObscuraLinkMod implements ClientModInitializer {
                 client.inGameHud.getChatHud().addMessage(Text.literal(message));
             }
         });
+    }
+
+    private Optional<ShadowMessage> extractShadowMessage(String raw) {
+        if (!config.shadowListenMode || raw == null || raw.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            Matcher matcher = Pattern.compile(config.shadowListenRegex).matcher(raw);
+            if (!matcher.matches()) {
+                return Optional.empty();
+            }
+            String player = matcher.group("player");
+            String message = matcher.group("message");
+            if (player == null || message == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new ShadowMessage(player, message));
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Invalid ObscuraLink shadow listen regex: {}", config.shadowListenRegex, e);
+            return Optional.empty();
+        }
+    }
+
+    private record ShadowMessage(String player, String message) {
     }
 }

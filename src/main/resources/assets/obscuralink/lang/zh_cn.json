@@ -7,6 +7,8 @@
   "text.autoconfig.obscuralink.option.sendDelayMs": "发送延迟（毫秒）",
   "text.autoconfig.obscuralink.option.receiveRegexMode": "启用正则接收模式",
   "text.autoconfig.obscuralink.option.receiveRegex": "接收正则表达式",
+  "text.autoconfig.obscuralink.option.shadowListenMode": "影听模式",
+  "text.autoconfig.obscuralink.option.shadowListenRegex": "影听正则表达式",
   "text.autoconfig.obscuralink.option.kemAlgorithm": "KEM 算法",
   "text.autoconfig.obscuralink.option.signatureAlgorithm": "签名算法",
   "text.autoconfig.obscuralink.option.aeadAlgorithm": "AEAD 算法",

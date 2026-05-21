@@ -7,6 +7,8 @@
   "text.autoconfig.obscuralink.option.sendDelayMs": "Send Delay (ms)",
   "text.autoconfig.obscuralink.option.receiveRegexMode": "Regex Receive Mode",
   "text.autoconfig.obscuralink.option.receiveRegex": "Receive Regex",
+  "text.autoconfig.obscuralink.option.shadowListenMode": "Shadow Listen Mode",
+  "text.autoconfig.obscuralink.option.shadowListenRegex": "Shadow Listen Regex",
   "text.autoconfig.obscuralink.option.kemAlgorithm": "KEM Algorithm",
   "text.autoconfig.obscuralink.option.signatureAlgorithm": "Signature Algorithm",
   "text.autoconfig.obscuralink.option.aeadAlgorithm": "AEAD Algorithm",
