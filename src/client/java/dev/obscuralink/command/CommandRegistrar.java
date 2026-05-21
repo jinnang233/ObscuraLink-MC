@@ -2,6 +2,7 @@ package dev.obscuralink.command;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.obscuralink.chat.ChatSendService;
+import dev.obscuralink.client.ClientMessages;
 import dev.obscuralink.config.ObscuraLinkConfig;
 import dev.obscuralink.model.GroupRecord;
 import dev.obscuralink.model.PublicIdentity;
@@ -369,5 +370,9 @@ public final class CommandRegistrar {
 
     private static void feedback(FabricClientCommandSource source, String message) {
         source.sendFeedback(Text.literal("[ObscuraLink] " + message));
+    }
+
+    private static String tr(String key, Object... args) {
+        return ClientMessages.tr(key, args);
     }
 }

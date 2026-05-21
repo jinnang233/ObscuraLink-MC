@@ -1,5 +1,6 @@
 package dev.obscuralink.chat;
 
+import dev.obscuralink.client.ClientMessages;
 import dev.obscuralink.config.ObscuraLinkConfig;
 import dev.obscuralink.crypto.CryptoService;
 import dev.obscuralink.fragment.FragmentService;
@@ -49,12 +50,12 @@ public final class ChatSendService {
     public void sendKemMessage(String receiver, String message, boolean sign) {
         try {
             PublicIdentity identity = keyStoreService.findPublicIdentity(receiver)
-                    .orElseThrow(() -> new IllegalStateException("No public key for " + receiver + ". Use /enc key import first."));
+                    .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_public_key", receiver)));
             ensureSendAllowed(receiver, identity);
             EncryptedPacket packet = cryptoService.encryptFor(identity, keyStoreService.local(),
                     keyStoreService.local().kemPublicKey().owner(), message, sign, config.enableCompression);
             sendPacket(packet, receiver);
-            system.accept("[ObscuraLink] Sent encrypted message to " + receiver + ".");
+            system.accept(ClientMessages.tr("text.obscuralink.sent_encrypted", receiver));
         } catch (Exception e) {
             system.accept("[ObscuraLink][ERROR] " + e.getMessage());
         }
@@ -63,11 +64,11 @@ public final class ChatSendService {
     public void exchange(String receiver) {
         try {
             PublicIdentity identity = keyStoreService.findPublicIdentity(receiver)
-                    .orElseThrow(() -> new IllegalStateException("No public key for " + receiver + ". Use /enc key import first."));
+                    .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_public_key", receiver)));
             ensureSendAllowed(receiver, identity);
             SessionRecord record = sessionService.createLocalSession(receiver, identity.kemPublicKey().fingerprint());
             sendKemMessage(receiver, "/session " + record.sessionId() + " " + record.secret(), true);
-            system.accept("[ObscuraLink] Session material prepared for " + receiver + ".");
+            system.accept(ClientMessages.tr("text.obscuralink.session_prepared", receiver));
         } catch (Exception e) {
             system.accept("[ObscuraLink][ERROR] " + e.getMessage());
         }
@@ -76,9 +77,9 @@ public final class ChatSendService {
     public void sendSessionMessage(String receiver, String message) {
         try {
             SessionRecord session = sessionService.find(receiver)
-                    .orElseThrow(() -> new IllegalStateException("No active session for " + receiver + ". Use /enc exchange first."));
+                    .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_session", receiver)));
             if (sessionService.isExpired(session, config.sessionTtlMinutes, config.maxMessagesPerSession, config.rotateAfterBytes)) {
-                throw new IllegalStateException("Session for " + receiver + " is expired. Use /enc session refresh " + receiver + ".");
+                throw new IllegalStateException(ClientMessages.tr("text.obscuralink.error.session_expired", receiver));
             }
             sendKemMessage(receiver, message, true);
             sessionService.recordMessage(receiver, message.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
@@ -89,10 +90,10 @@ public final class ChatSendService {
 
     public void sendGroupMessage(String groupName, List<String> members, String message) {
         if (members.isEmpty()) {
-            system.accept("[ObscuraLink][ERROR] Group " + groupName + " has no members.");
+            system.accept(ClientMessages.tr("text.obscuralink.error.group_empty", groupName));
             return;
         }
-        system.accept("[ObscuraLink] Sending encrypted group message to " + groupName + " (" + members.size() + " members).");
+        system.accept(ClientMessages.tr("text.obscuralink.group_sending", groupName, members.size()));
         for (String member : members) {
             sendKemMessage(member, message, true);
         }
@@ -101,7 +102,7 @@ public final class ChatSendService {
     public void resendLatest() {
         try {
             CachedSentMessage cached = sentMessageCacheService.latest()
-                    .orElseThrow(() -> new IllegalStateException("No sent encrypted message is cached."));
+                    .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_cached_message")));
             resend(cached);
         } catch (Exception e) {
             system.accept("[ObscuraLink][ERROR] " + e.getMessage());
@@ -111,7 +112,7 @@ public final class ChatSendService {
     public void resend(String messageId) {
         try {
             CachedSentMessage cached = sentMessageCacheService.find(messageId)
-                    .orElseThrow(() -> new IllegalStateException("No cached encrypted message with id " + messageId + "."));
+                    .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_cached_message_id", messageId)));
             resend(cached);
         } catch (Exception e) {
             system.accept("[ObscuraLink][ERROR] " + e.getMessage());
@@ -120,8 +121,7 @@ public final class ChatSendService {
 
     private void resend(CachedSentMessage cached) {
         sendFragments(cached.fragments());
-        system.accept("[ObscuraLink] Resending encrypted fragments for " + cached.receiver()
-                + " messageId=" + cached.messageId() + ".");
+        system.accept(ClientMessages.tr("text.obscuralink.resending", cached.receiver(), cached.messageId()));
     }
 
     private void sendPacket(EncryptedPacket packet, String receiver) throws Exception {
@@ -136,7 +136,7 @@ public final class ChatSendService {
             for (String fragment : fragments) {
                 chatSender.accept(fragment);
                 if (config.showProgress) {
-                    system.accept("[ObscuraLink] Fragment sent.");
+                    system.accept(ClientMessages.tr("text.obscuralink.fragment_sent"));
                 }
                 sleep(config.sendDelayMs);
             }
@@ -148,11 +148,10 @@ public final class ChatSendService {
     private void ensureSendAllowed(String receiver, PublicIdentity identity) throws Exception {
         TrustState trustState = keyTrustService.trustState(receiver, true);
         if (trustState == TrustState.DISTRUSTED) {
-            throw new IllegalStateException("Public key for " + receiver + " is distrusted. Refusing to send.");
+            throw new IllegalStateException(ClientMessages.tr("text.obscuralink.error.distrusted_key", receiver));
         }
         if (trustState == TrustState.TOFU_TRUSTED) {
-            system.accept("[ObscuraLink] Encrypted send allowed, but " + identity.owner()
-                    + "'s fingerprint has not been manually verified.");
+            system.accept(ClientMessages.tr("text.obscuralink.warning.tofu_unverified", identity.owner()));
         }
     }
 

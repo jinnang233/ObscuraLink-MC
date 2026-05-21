@@ -1,5 +1,6 @@
 package dev.obscuralink.chat;
 
+import dev.obscuralink.client.ClientMessages;
 import dev.obscuralink.config.ObscuraLinkConfig;
 import dev.obscuralink.crypto.CryptoService;
 import dev.obscuralink.fragment.FragmentReassembler;
@@ -56,8 +57,7 @@ public final class ChatReceiveHandler {
                 String sender = fragmentSenders.getOrDefault(timeout.messageId(), senderName);
                 fragmentSenders.remove(timeout.messageId());
                 if (config.showReceiveProgress) {
-                    system.accept("[ObscuraLink] " + sender + "'s encrypted message timed out; received "
-                            + timeout.received() + "/" + timeout.total() + " fragments.");
+                    system.accept(ClientMessages.tr("text.obscuralink.receive_timeout", sender, timeout.received(), timeout.total()));
                 }
             }
             Fragment fragment = fragmentService.parse(fragmentLine.get());
@@ -66,19 +66,19 @@ public final class ChatReceiveHandler {
             if (packetBytes.isEmpty()) {
                 if (config.showReceiveProgress) {
                     reassembler.progress(fragment.messageId()).ifPresent(progress ->
-                            system.accept("[ObscuraLink] Receiving encrypted message from " + senderName + ": "
-                                    + progress.received() + "/" + progress.total()));
+                            system.accept(ClientMessages.tr("text.obscuralink.receiving", senderName,
+                                    progress.received(), progress.total())));
                 }
                 return;
             }
             fragmentSenders.remove(fragment.messageId());
             if (config.showReceiveProgress) {
-                system.accept("[ObscuraLink] Encrypted message from " + senderName + " complete; decrypting...");
+                system.accept(ClientMessages.tr("text.obscuralink.receive_complete", senderName));
             }
             EncryptedPacket packet = packetCodec.decode(packetBytes.get());
             if (!packet.receiver().equalsIgnoreCase(keyStoreService.local().kemPublicKey().owner())) {
                 if (config.verboseMessages) {
-                    system.accept("[ObscuraLink] Ignored encrypted packet for " + packet.receiver() + ".");
+                    system.accept(ClientMessages.tr("text.obscuralink.ignored_packet", packet.receiver()));
                 }
                 return;
             }
@@ -87,9 +87,9 @@ public final class ChatReceiveHandler {
             String plaintext = cryptoService.decrypt(packet, keyStoreService.local(), sender);
             decryptionHistoryService.recordSuccess(packet.sender());
             String status = packet.signed() ? "VALID" : "UNSIGNED";
-            system.accept("[Encrypted][" + packet.sender() + "][" + status + "]: " + plaintext);
+            system.accept(ClientMessages.tr("text.obscuralink.decrypt_display", packet.sender(), status, plaintext));
         } catch (Exception e) {
-            system.accept("[Encrypted][" + senderName + "][INVALID]: " + e.getMessage());
+            system.accept(ClientMessages.tr("text.obscuralink.decrypt_invalid", senderName, e.getMessage()));
         }
     }
 
