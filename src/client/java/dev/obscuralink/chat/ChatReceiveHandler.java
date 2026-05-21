@@ -8,10 +8,14 @@ import dev.obscuralink.fragment.FragmentService;
 import dev.obscuralink.model.EncryptedPacket;
 import dev.obscuralink.model.Fragment;
 import dev.obscuralink.model.FragmentProgress;
+import dev.obscuralink.model.PacketType;
 import dev.obscuralink.model.PublicIdentity;
+import dev.obscuralink.model.SessionRecord;
 import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.service.DecryptionHistoryService;
 import dev.obscuralink.service.KeyStoreService;
+import dev.obscuralink.service.SessionService;
+import dev.obscuralink.util.Base64Url;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,12 +31,14 @@ public final class ChatReceiveHandler {
     private final FragmentService fragmentService;
     private final FragmentReassembler reassembler;
     private final DecryptionHistoryService decryptionHistoryService;
+    private final SessionService sessionService;
     private final ConcurrentMap<String, String> fragmentSenders = new ConcurrentHashMap<>();
     private final Consumer<String> system;
 
     public ChatReceiveHandler(ObscuraLinkConfig config, KeyStoreService keyStoreService, CryptoService cryptoService,
                               PacketCodec packetCodec, FragmentService fragmentService, FragmentReassembler reassembler,
-                              DecryptionHistoryService decryptionHistoryService, Consumer<String> system) {
+                              DecryptionHistoryService decryptionHistoryService, SessionService sessionService,
+                              Consumer<String> system) {
         this.config = config;
         this.keyStoreService = keyStoreService;
         this.cryptoService = cryptoService;
@@ -40,6 +46,7 @@ public final class ChatReceiveHandler {
         this.fragmentService = fragmentService;
         this.reassembler = reassembler;
         this.decryptionHistoryService = decryptionHistoryService;
+        this.sessionService = sessionService;
         this.system = system;
     }
 
@@ -85,7 +92,23 @@ public final class ChatReceiveHandler {
             PublicIdentity sender = keyStoreService.findPublicIdentity(packet.sender())
                     .orElseThrow(() -> new IllegalStateException(
                             ClientMessages.tr("text.obscuralink.error.no_sender_public_key", packet.sender())));
-            String plaintext = cryptoService.decrypt(packet, keyStoreService.local(), sender);
+            String plaintext = switch (packet.type()) {
+                case KEM_MESSAGE, SIGNED_KEM_MESSAGE, SESSION_EXCHANGE ->
+                        cryptoService.decrypt(packet, keyStoreService.local(), sender);
+                case SESSION_MESSAGE -> {
+                    SessionRecord session = sessionService.find(packet.sender())
+                            .orElseThrow(() -> new IllegalStateException(
+                                    ClientMessages.tr("text.obscuralink.error.no_session", packet.sender())));
+                    yield cryptoService.decryptWithSession(packet, keyStoreService.local(), sender,
+                            Base64Url.decode(session.secret()));
+                }
+            };
+            if (packet.type() == PacketType.SESSION_MESSAGE) {
+                sessionService.recordMessage(packet.sender(), plaintext.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+            }
+            if (tryAcceptSessionExchange(packet, sender, plaintext)) {
+                return;
+            }
             decryptionHistoryService.recordSuccess(packet.sender());
             String status = packet.signed()
                     ? ClientMessages.tr("text.obscuralink.signature.valid")
@@ -94,6 +117,26 @@ public final class ChatReceiveHandler {
         } catch (Exception e) {
             system.accept(ClientMessages.tr("text.obscuralink.decrypt_invalid", senderName, e.getMessage()));
         }
+    }
+
+    private boolean tryAcceptSessionExchange(EncryptedPacket packet, PublicIdentity sender, String plaintext) throws Exception {
+        if (!plaintext.startsWith("/session ")) {
+            return false;
+        }
+        if (!packet.signed()) {
+            throw new IllegalArgumentException(ClientMessages.tr("text.obscuralink.error.session_exchange_unsigned"));
+        }
+        String[] parts = plaintext.split("\\s+", 3);
+        if (parts.length != 3) {
+            throw new IllegalArgumentException(ClientMessages.tr("text.obscuralink.error.session_exchange_invalid"));
+        }
+        if (Base64Url.decode(parts[1]).length != CryptoService.MESSAGE_ID_BYTES || Base64Url.decode(parts[2]).length != 32) {
+            throw new IllegalArgumentException(ClientMessages.tr("text.obscuralink.error.session_exchange_key_material"));
+        }
+        sessionService.acceptRemoteSession(packet.sender(), sender.kemPublicKey().fingerprint(), parts[1], parts[2]);
+        decryptionHistoryService.recordSuccess(packet.sender());
+        system.accept(ClientMessages.tr("text.obscuralink.session_accepted", packet.sender()));
+        return true;
     }
 
     private Optional<String> extractFragmentLine(String raw) {

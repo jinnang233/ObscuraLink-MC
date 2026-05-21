@@ -82,7 +82,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
         chatSendService = new ChatSendService(config, keyStoreService, keyTrustService, sessionService, sentMessageCacheService, cryptoService, packetCodec,
                 fragmentService, this::sendChatLine, this::system);
         chatReceiveHandler = new ChatReceiveHandler(config, keyStoreService, cryptoService, packetCodec, fragmentService,
-                reassembler, decryptionHistoryService, this::system);
+                reassembler, decryptionHistoryService, sessionService, this::system);
 
         CommandRegistrar.register(chatSendService, keyStoreService, keyTrustService, sessionService, decryptionHistoryService,
                 groupService, config);

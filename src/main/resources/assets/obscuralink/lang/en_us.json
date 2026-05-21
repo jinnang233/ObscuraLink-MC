@@ -84,5 +84,9 @@
   "text.obscuralink.command.key_verified": "Verified fingerprint for %s.",
   "text.obscuralink.command.error.unsupported_trust_state": "Unsupported trust state: %s.",
   "text.obscuralink.command.error.fingerprint_mismatch": "[ERROR] fingerprint does not match %s.",
-  "text.obscuralink.error.key_init_failed": "[ObscuraLink][ERROR] Key initialization failed. Encrypted chat is disabled; check the client log."
+  "text.obscuralink.error.key_init_failed": "[ObscuraLink][ERROR] Key initialization failed. Encrypted chat is disabled; check the client log.",
+  "text.obscuralink.session_accepted": "[ObscuraLink] Session established with %s.",
+  "text.obscuralink.error.session_exchange_unsigned": "Session exchange payload is not signed.",
+  "text.obscuralink.error.session_exchange_invalid": "Session exchange payload is invalid.",
+  "text.obscuralink.error.session_exchange_key_material": "Session exchange key material is invalid."
 }

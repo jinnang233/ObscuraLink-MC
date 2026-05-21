@@ -133,6 +133,37 @@ public final class CryptoService {
         }
     }
 
+    public EncryptedPacket encryptWithSession(String receiver, LocalKeyMaterial senderKeys, String sender,
+                                              byte[] sessionSecret, String message, boolean sign, boolean compress)
+            throws CryptoException {
+        try {
+            byte[] messageId = randomMessageId();
+            byte[] derivedKey = deriveSessionSecret(sessionSecret, messageId);
+            byte[] nonce = randomNonce();
+            byte[] plaintext = message.getBytes(StandardCharsets.UTF_8);
+            byte flags = (byte) ((sign ? FLAG_SIGNED : 0) | (compress ? FLAG_COMPRESSED : 0));
+            byte[] payload = compress ? deflate(plaintext) : plaintext;
+
+            EncryptedPacket packetTemplate = new EncryptedPacket(EncryptedPacket.VERSION, PacketType.SESSION_MESSAGE,
+                    flags, sender, receiver, System.currentTimeMillis(), messageId, (short) 0, (short) 1,
+                    AlgorithmSuite.defaults(), nonce, new byte[0], new byte[0], new byte[0]);
+
+            byte[] ciphertext = aeadEncrypt(derivedKey, nonce, packetCodec.aadFor(packetTemplate), payload);
+            EncryptedPacket unsigned = new EncryptedPacket(packetTemplate.protocolVersion(), packetTemplate.type(),
+                    packetTemplate.flags(), packetTemplate.sender(), packetTemplate.receiver(),
+                    packetTemplate.timestampMillis(), packetTemplate.messageId(), packetTemplate.aadFragmentIndex(),
+                    packetTemplate.aadFragmentTotal(), packetTemplate.algorithms(), nonce, new byte[0], ciphertext,
+                    new byte[0]);
+            byte[] signature = sign ? sign(senderKeys.signaturePrivateKey(), packetCodec.signatureInput(unsigned)) : new byte[0];
+            return new EncryptedPacket(unsigned.protocolVersion(), unsigned.type(), unsigned.flags(), unsigned.sender(),
+                    unsigned.receiver(), unsigned.timestampMillis(), unsigned.messageId(), unsigned.aadFragmentIndex(),
+                    unsigned.aadFragmentTotal(), unsigned.algorithms(), unsigned.nonce(), unsigned.kemCiphertext(),
+                    unsigned.ciphertext(), signature);
+        } catch (GeneralSecurityException e) {
+            throw new CryptoException("Unable to encrypt session message", e);
+        }
+    }
+
     public String decrypt(EncryptedPacket packet, LocalKeyMaterial receiverKeys, PublicIdentity claimedSender)
             throws CryptoException {
         if (!packet.receiver().equalsIgnoreCase(receiverKeys.kemPublicKey().owner())) {
@@ -157,6 +188,31 @@ public final class CryptoService {
             return new String(payload, StandardCharsets.UTF_8);
         } catch (GeneralSecurityException e) {
             throw new CryptoException("Unable to decrypt message", e);
+        }
+    }
+
+    public String decryptWithSession(EncryptedPacket packet, LocalKeyMaterial receiverKeys, PublicIdentity claimedSender,
+                                     byte[] sessionSecret) throws CryptoException {
+        if (!packet.receiver().equalsIgnoreCase(receiverKeys.kemPublicKey().owner())) {
+            throw new CryptoException("Packet receiver mismatch: expected " + receiverKeys.kemPublicKey().owner() + ", got " + packet.receiver());
+        }
+        if (packet.type() != PacketType.SESSION_MESSAGE) {
+            throw new CryptoException("Packet is not a session message: " + packet.type());
+        }
+        try {
+            byte[] derivedKey = deriveSessionSecret(sessionSecret, packet.messageId());
+            byte[] plaintext = aeadDecrypt(derivedKey, packet.nonce(), packetCodec.aadFor(packet), packet.ciphertext());
+            if (packet.signed()) {
+                EncryptedPacket unsigned = packetCodec.withoutSignature(packet);
+                boolean valid = verify(claimedSender.signaturePublicKey(), packetCodec.signatureInput(unsigned), packet.signature());
+                if (!valid) {
+                    throw new CryptoException("Signature verification failed for " + packet.sender());
+                }
+            }
+            byte[] payload = (packet.flags() & FLAG_COMPRESSED) != 0 ? inflate(plaintext) : plaintext;
+            return new String(payload, StandardCharsets.UTF_8);
+        } catch (GeneralSecurityException e) {
+            throw new CryptoException("Unable to decrypt session message", e);
         }
     }
 

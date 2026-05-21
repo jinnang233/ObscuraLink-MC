@@ -36,6 +36,15 @@ public final class SessionService {
         return record;
     }
 
+    public SessionRecord acceptRemoteSession(String peer, String peerFingerprint, String sessionId, String secret)
+            throws IOException {
+        Files.createDirectories(sessionsDir);
+        SessionRecord record = new SessionRecord(peer, peerFingerprint, sessionId, Instant.now(), Instant.now(),
+                secret, 0, 0L);
+        save(record);
+        return record;
+    }
+
     public Optional<SessionRecord> find(String peer) throws IOException {
         Path path = pathFor(peer);
         if (!Files.exists(path)) {

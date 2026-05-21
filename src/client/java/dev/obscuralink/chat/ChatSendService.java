@@ -14,6 +14,7 @@ import dev.obscuralink.service.KeyStoreService;
 import dev.obscuralink.service.KeyTrustService;
 import dev.obscuralink.service.SentMessageCacheService;
 import dev.obscuralink.service.SessionService;
+import dev.obscuralink.util.Base64Url;
 import dev.obscuralink.util.Hex;
 
 import java.util.List;
@@ -81,8 +82,15 @@ public final class ChatSendService {
             if (sessionService.isExpired(session, config.sessionTtlMinutes, config.maxMessagesPerSession, config.rotateAfterBytes)) {
                 throw new IllegalStateException(ClientMessages.tr("text.obscuralink.error.session_expired", receiver));
             }
-            sendKemMessage(receiver, message, true);
+            PublicIdentity identity = keyStoreService.findPublicIdentity(receiver)
+                    .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_public_key", receiver)));
+            ensureSendAllowed(receiver, identity);
+            EncryptedPacket packet = cryptoService.encryptWithSession(receiver, keyStoreService.local(),
+                    keyStoreService.local().kemPublicKey().owner(), Base64Url.decode(session.secret()), message,
+                    true, config.enableCompression);
+            sendPacket(packet, receiver);
             sessionService.recordMessage(receiver, message.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+            system.accept(ClientMessages.tr("text.obscuralink.sent_encrypted", receiver));
         } catch (Exception e) {
             error(e);
         }

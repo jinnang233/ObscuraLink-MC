@@ -84,5 +84,9 @@
   "text.obscuralink.command.key_verified": "Huella de %s verificada.",
   "text.obscuralink.command.error.unsupported_trust_state": "Estado de confianza no compatible: %s.",
   "text.obscuralink.command.error.fingerprint_mismatch": "[ERROR] la huella no coincide con %s.",
-  "text.obscuralink.error.key_init_failed": "[ObscuraLink][ERROR] Falló la inicialización de claves. El chat cifrado está desactivado; revisa el registro del cliente."
+  "text.obscuralink.error.key_init_failed": "[ObscuraLink][ERROR] Falló la inicialización de claves. El chat cifrado está desactivado; revisa el registro del cliente.",
+  "text.obscuralink.session_accepted": "[ObscuraLink] Sesión establecida con %s.",
+  "text.obscuralink.error.session_exchange_unsigned": "La carga de intercambio de sesión no está firmada.",
+  "text.obscuralink.error.session_exchange_invalid": "La carga de intercambio de sesión no es válida.",
+  "text.obscuralink.error.session_exchange_key_material": "El material de clave del intercambio de sesión no es válido."
 }

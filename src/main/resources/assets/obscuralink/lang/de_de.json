@@ -84,5 +84,9 @@
   "text.obscuralink.command.key_verified": "Fingerabdruck für %s verifiziert.",
   "text.obscuralink.command.error.unsupported_trust_state": "Nicht unterstützter Vertrauensstatus: %s.",
   "text.obscuralink.command.error.fingerprint_mismatch": "[FEHLER] Fingerabdruck passt nicht zu %s.",
-  "text.obscuralink.error.key_init_failed": "[ObscuraLink][FEHLER] Schlüsselinitialisierung fehlgeschlagen. Verschlüsselter Chat ist deaktiviert; prüfe das Client-Log."
+  "text.obscuralink.error.key_init_failed": "[ObscuraLink][FEHLER] Schlüsselinitialisierung fehlgeschlagen. Verschlüsselter Chat ist deaktiviert; prüfe das Client-Log.",
+  "text.obscuralink.session_accepted": "[ObscuraLink] Sitzung mit %s hergestellt.",
+  "text.obscuralink.error.session_exchange_unsigned": "Sitzungsaustausch-Nutzdaten sind nicht signiert.",
+  "text.obscuralink.error.session_exchange_invalid": "Sitzungsaustausch-Nutzdaten sind ungültig.",
+  "text.obscuralink.error.session_exchange_key_material": "Schlüsselmaterial für den Sitzungsaustausch ist ungültig."
 }

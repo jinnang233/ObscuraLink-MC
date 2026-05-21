@@ -84,5 +84,9 @@
   "text.obscuralink.command.key_verified": "%s の指紋を検証しました。",
   "text.obscuralink.command.error.unsupported_trust_state": "未対応の信頼状態: %s。",
   "text.obscuralink.command.error.fingerprint_mismatch": "[エラー] 指紋が %s と一致しません。",
-  "text.obscuralink.error.key_init_failed": "[ObscuraLink][エラー] 鍵の初期化に失敗しました。暗号化チャットは無効です。クライアントログを確認してください。"
+  "text.obscuralink.error.key_init_failed": "[ObscuraLink][エラー] 鍵の初期化に失敗しました。暗号化チャットは無効です。クライアントログを確認してください。",
+  "text.obscuralink.session_accepted": "[ObscuraLink] %s とのセッションを確立しました。",
+  "text.obscuralink.error.session_exchange_unsigned": "セッション交換ペイロードが署名されていません。",
+  "text.obscuralink.error.session_exchange_invalid": "セッション交換ペイロードが無効です。",
+  "text.obscuralink.error.session_exchange_key_material": "セッション交換の鍵素材が無効です。"
 }
