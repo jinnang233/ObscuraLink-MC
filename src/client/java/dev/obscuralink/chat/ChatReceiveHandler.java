@@ -83,10 +83,13 @@ public final class ChatReceiveHandler {
                 return;
             }
             PublicIdentity sender = keyStoreService.findPublicIdentity(packet.sender())
-                    .orElseThrow(() -> new IllegalStateException("No public key for sender " + packet.sender()));
+                    .orElseThrow(() -> new IllegalStateException(
+                            ClientMessages.tr("text.obscuralink.error.no_sender_public_key", packet.sender())));
             String plaintext = cryptoService.decrypt(packet, keyStoreService.local(), sender);
             decryptionHistoryService.recordSuccess(packet.sender());
-            String status = packet.signed() ? "VALID" : "UNSIGNED";
+            String status = packet.signed()
+                    ? ClientMessages.tr("text.obscuralink.signature.valid")
+                    : ClientMessages.tr("text.obscuralink.signature.unsigned");
             system.accept(ClientMessages.tr("text.obscuralink.decrypt_display", packet.sender(), status, plaintext));
         } catch (Exception e) {
             system.accept(ClientMessages.tr("text.obscuralink.decrypt_invalid", senderName, e.getMessage()));

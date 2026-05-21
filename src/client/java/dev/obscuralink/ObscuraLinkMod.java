@@ -2,6 +2,7 @@ package dev.obscuralink;
 
 import dev.obscuralink.chat.ChatReceiveHandler;
 import dev.obscuralink.chat.ChatSendService;
+import dev.obscuralink.client.ClientMessages;
 import dev.obscuralink.command.CommandRegistrar;
 import dev.obscuralink.config.ObscuraLinkConfig;
 import dev.obscuralink.crypto.CryptoService;
@@ -74,7 +75,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
             keyStoreService.init(owner, uuid);
         } catch (Exception e) {
             LOGGER.error("Unable to initialize ObscuraLink keys", e);
-            system("[ObscuraLink][ERROR] Key initialization failed. Encrypted chat is disabled; check the client log.");
+            system(ClientMessages.tr("text.obscuralink.error.key_init_failed"));
             return;
         }
 

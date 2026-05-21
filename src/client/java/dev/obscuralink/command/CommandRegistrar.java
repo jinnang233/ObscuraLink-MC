@@ -108,12 +108,13 @@ public final class CommandRegistrar {
                                     String group = StringArgumentType.getString(ctx, "group");
                                     try {
                                         GroupRecord record = groupService.find(group)
-                                                .orElseThrow(() -> new IllegalStateException("No group named " + group));
+                                                .orElseThrow(() -> new IllegalStateException(
+                                                        tr("text.obscuralink.command.error.no_group", group)));
                                         chatSendService.sendGroupMessage(record.name(), record.members(),
                                                 StringArgumentType.getString(ctx, "message"));
                                         return 1;
                                     } catch (Exception e) {
-                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                        error(ctx.getSource(), e);
                                         return 0;
                                     }
                                 })));
@@ -129,11 +130,11 @@ public final class CommandRegistrar {
                                             List<String> members = parseMembers(StringArgumentType.getString(ctx, "members"));
                                             try {
                                                 GroupRecord group = groupService.create(name, members);
-                                                feedback(ctx.getSource(), "Created group " + group.name()
-                                                        + " with " + group.members().size() + " members.");
+                                                feedback(ctx.getSource(), tr("text.obscuralink.command.group_created",
+                                                        group.name(), group.members().size()));
                                                 return 1;
                                             } catch (Exception e) {
-                                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                error(ctx.getSource(), e);
                                                 return 0;
                                             }
                                         }))))
@@ -142,14 +143,15 @@ public final class CommandRegistrar {
                             try {
                                 List<GroupRecord> groups = groupService.list();
                                 if (groups.isEmpty()) {
-                                    feedback(ctx.getSource(), "No groups.");
+                                    feedback(ctx.getSource(), tr("text.obscuralink.command.no_groups"));
                                 }
                                 for (GroupRecord group : groups) {
-                                    feedback(ctx.getSource(), group.name() + ": " + String.join(", ", group.members()));
+                                    feedback(ctx.getSource(), tr("text.obscuralink.command.group_list_entry",
+                                            group.name(), String.join(", ", group.members())));
                                 }
                                 return groups.size();
                             } catch (Exception e) {
-                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                error(ctx.getSource(), e);
                                 return 0;
                             }
                         }))
@@ -159,10 +161,10 @@ public final class CommandRegistrar {
                                     String name = StringArgumentType.getString(ctx, "name");
                                     try {
                                         groupService.delete(name);
-                                        feedback(ctx.getSource(), "Deleted group " + name + ".");
+                                        feedback(ctx.getSource(), tr("text.obscuralink.command.group_deleted", name));
                                         return 1;
                                     } catch (Exception e) {
-                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                        error(ctx.getSource(), e);
                                         return 0;
                                     }
                                 })));
@@ -190,18 +192,19 @@ public final class CommandRegistrar {
                             try {
                                 List<SessionRecord> sessions = sessionService.list();
                                 if (sessions.isEmpty()) {
-                                    feedback(ctx.getSource(), "No sessions.");
+                                    feedback(ctx.getSource(), tr("text.obscuralink.command.no_sessions"));
                                 }
                                 for (SessionRecord session : sessions) {
                                     String status = sessionService.isExpired(session, config.sessionTtlMinutes,
-                                            config.maxMessagesPerSession, config.rotateAfterBytes) ? "expired" : "active";
-                                    feedback(ctx.getSource(), session.peer() + " " + status
-                                            + " messages=" + session.messageCount()
-                                            + " bytes=" + session.bytesUsed());
+                                            config.maxMessagesPerSession, config.rotateAfterBytes)
+                                            ? tr("text.obscuralink.command.session_expired")
+                                            : tr("text.obscuralink.command.session_active");
+                                    feedback(ctx.getSource(), tr("text.obscuralink.command.session_list_entry",
+                                            session.peer(), status, session.messageCount(), session.bytesUsed()));
                                 }
                                 return sessions.size();
                             } catch (Exception e) {
-                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                error(ctx.getSource(), e);
                                 return 0;
                             }
                         }))
@@ -211,10 +214,10 @@ public final class CommandRegistrar {
                                     String player = StringArgumentType.getString(ctx, "player");
                                     try {
                                         sessionService.clear(player);
-                                        feedback(ctx.getSource(), "Cleared session for " + player + ".");
+                                        feedback(ctx.getSource(), tr("text.obscuralink.command.session_cleared", player));
                                         return 1;
                                     } catch (Exception e) {
-                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                        error(ctx.getSource(), e);
                                         return 0;
                                     }
                                 })))
@@ -229,9 +232,8 @@ public final class CommandRegistrar {
     private static LiteralArgumentBuilder<FabricClientCommandSource> showAlgorithmsCommand(ObscuraLinkConfig config) {
         return ClientCommandManager.literal("showalgs")
                 .executes(ctx -> {
-                    feedback(ctx.getSource(), "KEM=" + config.kemAlgorithm
-                            + ", SIG=" + config.signatureAlgorithm
-                            + ", AEAD=" + config.aeadAlgorithm);
+                    feedback(ctx.getSource(), tr("text.obscuralink.command.algorithms",
+                            config.kemAlgorithm, config.signatureAlgorithm, config.aeadAlgorithm));
                     return 1;
                 });
     }
@@ -258,16 +260,16 @@ public final class CommandRegistrar {
                             try {
                                 List<PublicIdentity> identities = keyStoreService.listPublicIdentities();
                                 if (identities.isEmpty()) {
-                                    feedback(ctx.getSource(), "No imported public keys.");
+                                    feedback(ctx.getSource(), tr("text.obscuralink.command.no_imported_keys"));
                                 }
                                 for (PublicIdentity identity : identities) {
-                                    feedback(ctx.getSource(), identity.owner() + " kem="
-                                            + identity.kemPublicKey().fingerprint() + " sig="
-                                            + identity.signaturePublicKey().fingerprint());
+                                    feedback(ctx.getSource(), tr("text.obscuralink.command.key_list_entry",
+                                            identity.owner(), identity.kemPublicKey().fingerprint(),
+                                            identity.signaturePublicKey().fingerprint()));
                                 }
                                 return identities.size();
                             } catch (Exception e) {
-                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                error(ctx.getSource(), e);
                                 return 0;
                             }
                         }))
@@ -277,13 +279,14 @@ public final class CommandRegistrar {
                                     String player = StringArgumentType.getString(ctx, "player");
                                     try {
                                         PublicIdentity identity = keyStoreService.findPublicIdentity(player)
-                                                .orElseThrow(() -> new IllegalStateException("No public key for " + player));
-                                        feedback(ctx.getSource(), player + " kem="
-                                                + identity.kemPublicKey().fingerprint() + " sig="
-                                                + identity.signaturePublicKey().fingerprint());
+                                                .orElseThrow(() -> new IllegalStateException(
+                                                        tr("text.obscuralink.error.no_public_key", player)));
+                                        feedback(ctx.getSource(), tr("text.obscuralink.command.key_fingerprint",
+                                                player, identity.kemPublicKey().fingerprint(),
+                                                identity.signaturePublicKey().fingerprint()));
                                         return 1;
                                     } catch (Exception e) {
-                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                        error(ctx.getSource(), e);
                                         return 0;
                                     }
                                 })))
@@ -293,7 +296,7 @@ public final class CommandRegistrar {
                                 feedback(ctx.getSource(), keyStoreService.exportOwnPublic());
                                 return 1;
                             } catch (Exception e) {
-                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                error(ctx.getSource(), e);
                                 return 0;
                             }
                         }))
@@ -306,10 +309,11 @@ public final class CommandRegistrar {
                                                 keyStoreService.importPublicIdentity(player,
                                                         StringArgumentType.getString(ctx, "data_or_file"));
                                                 keyTrustService.markTofuTrusted(player);
-                                                feedback(ctx.getSource(), "Imported public key for " + player + " with TOFU trust.");
+                                                feedback(ctx.getSource(),
+                                                        tr("text.obscuralink.command.key_imported_tofu", player));
                                                 return 1;
                                             } catch (Exception e) {
-                                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                error(ctx.getSource(), e);
                                                 return 0;
                                             }
                                         }))))
@@ -328,25 +332,27 @@ public final class CommandRegistrar {
                             String player = StringArgumentType.getString(ctx, "player");
                             try {
                                 keyStoreService.findPublicIdentity(player)
-                                        .orElseThrow(() -> new IllegalStateException("No public key for " + player));
+                                        .orElseThrow(() -> new IllegalStateException(
+                                                tr("text.obscuralink.error.no_public_key", player)));
                                 switch (trustState) {
                                     case VERIFIED -> {
                                         keyTrustService.markVerified(player);
-                                        feedback(ctx.getSource(), "Confirmed fingerprint for " + player + ".");
+                                        feedback(ctx.getSource(), tr("text.obscuralink.command.key_confirmed", player));
                                     }
                                     case TOFU_TRUSTED -> {
                                         keyTrustService.markTofuTrusted(player);
-                                        feedback(ctx.getSource(), "Marked " + player + " as TOFU trusted.");
+                                        feedback(ctx.getSource(), tr("text.obscuralink.command.key_trusted", player));
                                     }
                                     case DISTRUSTED -> {
                                         keyTrustService.markDistrusted(player);
-                                        feedback(ctx.getSource(), "Marked " + player + " as distrusted.");
+                                        feedback(ctx.getSource(), tr("text.obscuralink.command.key_distrusted", player));
                                     }
-                                    default -> throw new IllegalStateException("Unsupported trust state: " + trustState);
+                                    default -> throw new IllegalStateException(
+                                            tr("text.obscuralink.command.error.unsupported_trust_state", trustState));
                                 }
                                 return 1;
                             } catch (Exception e) {
-                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                error(ctx.getSource(), e);
                                 return 0;
                             }
                         }));
@@ -362,16 +368,18 @@ public final class CommandRegistrar {
                                     String fingerprint = StringArgumentType.getString(ctx, "fingerprint");
                                     try {
                                         PublicIdentity identity = keyStoreService.findPublicIdentity(player)
-                                                .orElseThrow(() -> new IllegalStateException("No public key for " + player));
+                                                .orElseThrow(() -> new IllegalStateException(
+                                                        tr("text.obscuralink.error.no_public_key", player)));
                                         if (!keyTrustService.fingerprintMatches(identity, fingerprint)) {
-                                            feedback(ctx.getSource(), "ERROR: fingerprint does not match " + player + ".");
+                                            feedback(ctx.getSource(),
+                                                    tr("text.obscuralink.command.error.fingerprint_mismatch", player));
                                             return 0;
                                         }
                                         keyTrustService.markVerified(player);
-                                        feedback(ctx.getSource(), "Verified fingerprint for " + player + ".");
+                                        feedback(ctx.getSource(), tr("text.obscuralink.command.key_verified", player));
                                         return 1;
                                     } catch (Exception e) {
-                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                        error(ctx.getSource(), e);
                                         return 0;
                                     }
                                 })));
@@ -412,7 +420,7 @@ public final class CommandRegistrar {
             feedback(source, tr("text.obscuralink.status.algorithms",
                     config.kemAlgorithm, config.signatureAlgorithm, config.aeadAlgorithm));
         } catch (Exception e) {
-            feedback(source, "ERROR: " + e.getMessage());
+            error(source, e);
         }
     }
 
@@ -425,6 +433,10 @@ public final class CommandRegistrar {
 
     private static void feedback(FabricClientCommandSource source, String message) {
         source.sendFeedback(Text.literal("[ObscuraLink] " + message));
+    }
+
+    private static void error(FabricClientCommandSource source, Exception e) {
+        feedback(source, tr("text.obscuralink.error.generic", e.getMessage()));
     }
 
     private static String trustStateLabel(TrustState trustState) {

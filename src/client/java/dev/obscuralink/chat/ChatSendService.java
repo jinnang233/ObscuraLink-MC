@@ -57,7 +57,7 @@ public final class ChatSendService {
             sendPacket(packet, receiver);
             system.accept(ClientMessages.tr("text.obscuralink.sent_encrypted", receiver));
         } catch (Exception e) {
-            system.accept("[ObscuraLink][ERROR] " + e.getMessage());
+            error(e);
         }
     }
 
@@ -70,7 +70,7 @@ public final class ChatSendService {
             sendKemMessage(receiver, "/session " + record.sessionId() + " " + record.secret(), true);
             system.accept(ClientMessages.tr("text.obscuralink.session_prepared", receiver));
         } catch (Exception e) {
-            system.accept("[ObscuraLink][ERROR] " + e.getMessage());
+            error(e);
         }
     }
 
@@ -84,7 +84,7 @@ public final class ChatSendService {
             sendKemMessage(receiver, message, true);
             sessionService.recordMessage(receiver, message.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
         } catch (Exception e) {
-            system.accept("[ObscuraLink][ERROR] " + e.getMessage());
+            error(e);
         }
     }
 
@@ -105,7 +105,7 @@ public final class ChatSendService {
                     .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_cached_message")));
             resend(cached);
         } catch (Exception e) {
-            system.accept("[ObscuraLink][ERROR] " + e.getMessage());
+            error(e);
         }
     }
 
@@ -115,7 +115,7 @@ public final class ChatSendService {
                     .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.obscuralink.error.no_cached_message_id", messageId)));
             resend(cached);
         } catch (Exception e) {
-            system.accept("[ObscuraLink][ERROR] " + e.getMessage());
+            error(e);
         }
     }
 
@@ -153,6 +153,10 @@ public final class ChatSendService {
         if (trustState == TrustState.TOFU_TRUSTED) {
             system.accept(ClientMessages.tr("text.obscuralink.warning.tofu_unverified", identity.owner()));
         }
+    }
+
+    private void error(Exception e) {
+        system.accept(ClientMessages.tr("text.obscuralink.error.generic", e.getMessage()));
     }
 
     private static void sleep(int millis) {
