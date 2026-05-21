@@ -1,6 +1,9 @@
 package dev.obscuralink.service;
 
 import dev.obscuralink.crypto.CryptoService;
+import dev.obscuralink.model.LocalKeyMaterial;
+import dev.obscuralink.model.PublicIdentity;
+import dev.obscuralink.util.JsonSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -30,5 +33,40 @@ final class KeyStoreServiceTest {
 
         assertEquals(first.local().kemPublicKey().fingerprint(), second.local().kemPublicKey().fingerprint());
         assertEquals(first.local().signaturePublicKey().fingerprint(), second.local().signaturePublicKey().fingerprint());
+    }
+
+    @Test
+    void findsPublicIdentityByOwnerWhenFilenameDiffers() throws Exception {
+        CryptoService cryptoService = new CryptoService();
+        KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
+        keyStoreService.init("alice", "alice-uuid");
+        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("foerdi", "foerdi-uuid");
+        PublicIdentity peer = publicIdentity(peerKeys);
+
+        Path publicDir = tempDir.resolve("keys").resolve("public");
+        Files.writeString(publicDir.resolve("foerdi-public.json"), JsonSupport.prettyGson().toJson(peer));
+
+        PublicIdentity found = keyStoreService.findPublicIdentity("foerdi").orElseThrow();
+        assertEquals(peer.kemPublicKey().fingerprint(), found.kemPublicKey().fingerprint());
+    }
+
+    @Test
+    void importsPublicIdentityFromConfigRelativeFile() throws Exception {
+        CryptoService cryptoService = new CryptoService();
+        KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
+        keyStoreService.init("alice", "alice-uuid");
+        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("foerdi", "foerdi-uuid");
+        PublicIdentity peer = publicIdentity(peerKeys);
+
+        Files.writeString(tempDir.resolve("foerdi.json"), JsonSupport.prettyGson().toJson(peer));
+        keyStoreService.importPublicIdentity("foerdi", "foerdi.json");
+
+        PublicIdentity found = keyStoreService.findPublicIdentity("foerdi").orElseThrow();
+        assertEquals(peer.signaturePublicKey().fingerprint(), found.signaturePublicKey().fingerprint());
+    }
+
+    private static PublicIdentity publicIdentity(LocalKeyMaterial material) {
+        return new PublicIdentity(material.kemPublicKey().owner(), material.kemPublicKey().uuid(),
+                material.kemPublicKey(), material.signaturePublicKey());
     }
 }

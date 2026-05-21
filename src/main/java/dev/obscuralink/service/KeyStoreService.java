@@ -69,26 +69,24 @@ public final class KeyStoreService {
     }
 
     public PublicIdentity importPublicIdentity(String player, String dataOrFile) throws IOException {
-        String json;
-        Path maybeFile = Path.of(dataOrFile);
-        if (Files.exists(maybeFile)) {
-            json = Files.readString(maybeFile, StandardCharsets.UTF_8);
-        } else {
-            json = new String(Base64Url.decode(dataOrFile), StandardCharsets.UTF_8);
-        }
-        PublicIdentity incoming = gson.fromJson(json, PublicIdentity.class);
-        if (incoming == null || incoming.kemPublicKey() == null || incoming.signaturePublicKey() == null) {
-            throw new IOException("Imported public key data is incomplete");
-        }
+        String json = readImportData(dataOrFile);
+        PublicIdentity incoming = parsePublicIdentity(json);
         String normalized = normalize(player);
         Path path = keysDir.resolve("public").resolve(normalized + ".json");
         if (Files.exists(path)) {
             PublicIdentity existing = read(path, PublicIdentity.class);
-            if (!existing.kemPublicKey().fingerprint().equals(incoming.kemPublicKey().fingerprint())
-                    || !existing.signaturePublicKey().fingerprint().equals(incoming.signaturePublicKey().fingerprint())) {
+            if (!sameIdentity(existing, incoming)) {
                 throw new IOException("TOFU violation: public key for " + player + " changed; refusing to overwrite");
             }
             return existing;
+        }
+        Optional<PublicIdentity> existingByOwner = findPublicIdentity(player);
+        if (existingByOwner.isPresent()) {
+            if (!sameIdentity(existingByOwner.get(), incoming)) {
+                throw new IOException("TOFU violation: public key for " + player + " changed; refusing to overwrite");
+            }
+            write(path, incoming);
+            return incoming;
         }
         write(path, incoming);
         return incoming;
@@ -96,10 +94,21 @@ public final class KeyStoreService {
 
     public Optional<PublicIdentity> findPublicIdentity(String player) throws IOException {
         Path path = keysDir.resolve("public").resolve(normalize(player) + ".json");
-        if (!Files.exists(path)) {
+        if (Files.exists(path)) {
+            return Optional.of(read(path, PublicIdentity.class));
+        }
+        if (!Files.exists(keysDir.resolve("public"))) {
             return Optional.empty();
         }
-        return Optional.of(read(path, PublicIdentity.class));
+        try (var stream = Files.list(keysDir.resolve("public"))) {
+            for (Path candidate : stream.filter(p -> p.toString().endsWith(".json")).toList()) {
+                PublicIdentity identity = read(candidate, PublicIdentity.class);
+                if (identity != null && identity.owner() != null && identity.owner().equalsIgnoreCase(player)) {
+                    return Optional.of(identity);
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     public List<PublicIdentity> listPublicIdentities() throws IOException {
@@ -117,6 +126,49 @@ public final class KeyStoreService {
 
     public KeyRecord rebuildPublicRecord(String algorithm, String owner, String uuid, String keyData) throws CryptoException {
         return cryptoService.keyRecord(algorithm, owner, uuid, Instant.now(), Base64Url.decode(keyData));
+    }
+
+    private String readImportData(String dataOrFile) throws IOException {
+        Optional<Path> importFile = findImportFile(dataOrFile);
+        if (importFile.isPresent()) {
+            return Files.readString(importFile.get(), StandardCharsets.UTF_8);
+        }
+        String trimmed = dataOrFile.trim();
+        if (trimmed.startsWith("{")) {
+            return trimmed;
+        }
+        try {
+            return new String(Base64Url.decode(trimmed), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Import data is neither a readable file nor valid Base64URL public key data: " + dataOrFile, e);
+        }
+    }
+
+    private Optional<Path> findImportFile(String dataOrFile) {
+        List<Path> candidates = List.of(
+                Path.of(dataOrFile),
+                root.resolve(dataOrFile),
+                keysDir.resolve("public").resolve(dataOrFile)
+        );
+        for (Path candidate : candidates) {
+            if (Files.isRegularFile(candidate)) {
+                return Optional.of(candidate);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private PublicIdentity parsePublicIdentity(String json) throws IOException {
+        PublicIdentity incoming = gson.fromJson(json, PublicIdentity.class);
+        if (incoming == null || incoming.kemPublicKey() == null || incoming.signaturePublicKey() == null) {
+            throw new IOException("Imported public key data is incomplete");
+        }
+        return incoming;
+    }
+
+    private static boolean sameIdentity(PublicIdentity first, PublicIdentity second) {
+        return first.kemPublicKey().fingerprint().equals(second.kemPublicKey().fingerprint())
+                && first.signaturePublicKey().fingerprint().equals(second.signaturePublicKey().fingerprint());
     }
 
     private <T> T read(Path path, Class<T> type) throws IOException {
