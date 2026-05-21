@@ -59,6 +59,8 @@ public final class ObscuraLinkMod implements ClientModInitializer {
             keyStoreService.init(owner, uuid);
         } catch (Exception e) {
             LOGGER.error("Unable to initialize ObscuraLink keys", e);
+            system("[ObscuraLink][ERROR] Key initialization failed. Encrypted chat is disabled; check the client log.");
+            return;
         }
 
         chatSendService = new ChatSendService(config, keyStoreService, sessionService, cryptoService, packetCodec,

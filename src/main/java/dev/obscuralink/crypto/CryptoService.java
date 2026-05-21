@@ -9,6 +9,7 @@ import dev.obscuralink.model.PublicIdentity;
 import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.util.Base64Url;
 import dev.obscuralink.util.Hex;
+import org.bouncycastle.jcajce.SecretKeyWithEncapsulation;
 import org.bouncycastle.jcajce.spec.KEMExtractSpec;
 import org.bouncycastle.jcajce.spec.KEMGenerateSpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -19,7 +20,6 @@ import org.bouncycastle.pqc.jcajce.spec.FalconParameterSpec;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -93,9 +93,9 @@ public final class CryptoService {
             byte[] messageId = randomMessageId();
             PublicKey kemPublic = decodePublicKey("CMCE", receiver.kemPublicKey().keyData());
             KeyGenerator keyGenerator = KeyGenerator.getInstance("CMCE", BCPQC);
-            keyGenerator.init(new KEMGenerateSpec(kemPublic, "AES", AES_KEY_BYTES * 8), secureRandom);
-            SecretKey kemSecret = keyGenerator.generateKey();
-            byte[] encapsulation = extractEncapsulation(kemSecret);
+            keyGenerator.init(new KEMGenerateSpec.Builder(kemPublic, "AES", AES_KEY_BYTES * 8).withNoKdf().build(), secureRandom);
+            SecretKeyWithEncapsulation kemSecret = (SecretKeyWithEncapsulation) keyGenerator.generateKey();
+            byte[] encapsulation = kemSecret.getEncapsulation();
             byte[] derivedKey = hkdf(kemSecret.getEncoded(), messageId, "obscuralink message aead".getBytes(StandardCharsets.UTF_8), AES_KEY_BYTES);
             byte[] nonce = randomNonce();
 
@@ -127,8 +127,8 @@ public final class CryptoService {
         try {
             PrivateKey privateKey = decodePrivateKey("CMCE", receiverKeys.kemPrivateKey().keyData());
             KeyGenerator keyGenerator = KeyGenerator.getInstance("CMCE", BCPQC);
-            keyGenerator.init(new KEMExtractSpec(privateKey, packet.kemCiphertext(), "AES", AES_KEY_BYTES * 8));
-            SecretKey kemSecret = keyGenerator.generateKey();
+            keyGenerator.init(new KEMExtractSpec.Builder(privateKey, packet.kemCiphertext(), "AES", AES_KEY_BYTES * 8).withNoKdf().build());
+            SecretKeyWithEncapsulation kemSecret = (SecretKeyWithEncapsulation) keyGenerator.generateKey();
             byte[] derivedKey = hkdf(kemSecret.getEncoded(), packet.messageId(),
                     "obscuralink message aead".getBytes(StandardCharsets.UTF_8), AES_KEY_BYTES);
             byte[] plaintext = aeadDecrypt(derivedKey, packet.nonce(), packetCodec.aadFor(packet), packet.ciphertext());
@@ -205,21 +205,6 @@ public final class CryptoService {
 
     private static PrivateKey decodePrivateKey(String algorithm, String base64) throws GeneralSecurityException {
         return KeyFactory.getInstance(algorithm, BCPQC).generatePrivate(new PKCS8EncodedKeySpec(Base64Url.decode(base64)));
-    }
-
-    private static byte[] extractEncapsulation(SecretKey secretKey) throws GeneralSecurityException {
-        try {
-            return (byte[]) secretKey.getClass().getMethod("getEncapsulation").invoke(secretKey);
-        } catch (ReflectiveOperationException first) {
-            try {
-                return (byte[]) secretKey.getClass().getMethod("getEncodedEncapsulation").invoke(secretKey);
-            } catch (ReflectiveOperationException second) {
-                GeneralSecurityException e = new GeneralSecurityException("BC KEM secret key does not expose encapsulation");
-                e.addSuppressed(first);
-                e.addSuppressed(second);
-                throw e;
-            }
-        }
     }
 
     private static byte[] aeadEncrypt(byte[] key, byte[] nonce, byte[] aad, byte[] plaintext) throws GeneralSecurityException {
