@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "obscuralink-mc",
+  "id": "obscuralink",
   "version": "${version}",
   "name": "ObscuraLink-MC",
   "description": "Post-quantum encrypted chat over Minecraft chat fragments.",
