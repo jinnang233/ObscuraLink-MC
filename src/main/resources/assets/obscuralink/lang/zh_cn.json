@@ -4,6 +4,7 @@
   "text.autoconfig.obscuralink.option.hideEncryptedRawMessage": "隐藏原始密文消息",
   "text.autoconfig.obscuralink.option.verboseMessages": "显示详细消息",
   "text.autoconfig.obscuralink.option.enableCompression": "压缩消息",
+  "text.autoconfig.obscuralink.option.showReceiveProgress": "显示接收进度",
   "text.autoconfig.obscuralink.option.fragmentSize": "分片大小",
   "text.autoconfig.obscuralink.option.sendDelayMs": "发送延迟（毫秒）",
   "text.autoconfig.obscuralink.option.receiveRegexMode": "启用正则接收模式",

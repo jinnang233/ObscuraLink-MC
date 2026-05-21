@@ -1,11 +1,13 @@
 package dev.obscuralink.fragment;
 
 import dev.obscuralink.model.Fragment;
+import dev.obscuralink.model.FragmentProgress;
 import dev.obscuralink.util.Base64Url;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,7 +30,7 @@ public final class FragmentReassembler {
     }
 
     public synchronized Optional<byte[]> accept(Fragment fragment) {
-        cleanup();
+        cleanupTimedOut();
         if (fragment.total() > maxFragmentsPerMessage) {
             throw new IllegalArgumentException("Too many fragments: " + fragment.total());
         }
@@ -54,10 +56,27 @@ public final class FragmentReassembler {
     }
 
     public synchronized int cleanup() {
+        return cleanupTimedOut().size();
+    }
+
+    public synchronized List<FragmentProgress> cleanupTimedOut() {
         long cutoff = clock.millis() - timeout.toMillis();
-        int before = partials.size();
-        partials.entrySet().removeIf(entry -> entry.getValue().lastTouched < cutoff);
-        return before - partials.size();
+        List<FragmentProgress> removed = partials.entrySet().stream()
+                .filter(entry -> entry.getValue().lastTouched < cutoff)
+                .map(entry -> new FragmentProgress(entry.getKey(), entry.getValue().fragments.size(), entry.getValue().total))
+                .toList();
+        for (FragmentProgress progress : removed) {
+            partials.remove(progress.messageId());
+        }
+        return removed;
+    }
+
+    public synchronized Optional<FragmentProgress> progress(String messageId) {
+        PartialMessage partial = partials.get(messageId);
+        if (partial == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new FragmentProgress(messageId, partial.fragments.size(), partial.total));
     }
 
     public synchronized int pendingMessages() {

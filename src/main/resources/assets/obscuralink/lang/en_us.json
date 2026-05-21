@@ -4,6 +4,7 @@
   "text.autoconfig.obscuralink.option.hideEncryptedRawMessage": "Hide Encrypted Raw Messages",
   "text.autoconfig.obscuralink.option.verboseMessages": "Verbose Messages",
   "text.autoconfig.obscuralink.option.enableCompression": "Compress Messages",
+  "text.autoconfig.obscuralink.option.showReceiveProgress": "Show Receive Progress",
   "text.autoconfig.obscuralink.option.fragmentSize": "Fragment Size",
   "text.autoconfig.obscuralink.option.sendDelayMs": "Send Delay (ms)",
   "text.autoconfig.obscuralink.option.receiveRegexMode": "Regex Receive Mode",

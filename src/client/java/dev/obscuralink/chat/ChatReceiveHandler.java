@@ -6,12 +6,15 @@ import dev.obscuralink.fragment.FragmentReassembler;
 import dev.obscuralink.fragment.FragmentService;
 import dev.obscuralink.model.EncryptedPacket;
 import dev.obscuralink.model.Fragment;
+import dev.obscuralink.model.FragmentProgress;
 import dev.obscuralink.model.PublicIdentity;
 import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.service.DecryptionHistoryService;
 import dev.obscuralink.service.KeyStoreService;
 
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -23,6 +26,7 @@ public final class ChatReceiveHandler {
     private final FragmentService fragmentService;
     private final FragmentReassembler reassembler;
     private final DecryptionHistoryService decryptionHistoryService;
+    private final ConcurrentMap<String, String> fragmentSenders = new ConcurrentHashMap<>();
     private final Consumer<String> system;
 
     public ChatReceiveHandler(ObscuraLinkConfig config, KeyStoreService keyStoreService, CryptoService cryptoService,
@@ -48,10 +52,28 @@ public final class ChatReceiveHandler {
             return;
         }
         try {
+            for (FragmentProgress timeout : reassembler.cleanupTimedOut()) {
+                String sender = fragmentSenders.getOrDefault(timeout.messageId(), senderName);
+                fragmentSenders.remove(timeout.messageId());
+                if (config.showReceiveProgress) {
+                    system.accept("[ObscuraLink] " + sender + "'s encrypted message timed out; received "
+                            + timeout.received() + "/" + timeout.total() + " fragments.");
+                }
+            }
             Fragment fragment = fragmentService.parse(fragmentLine.get());
+            fragmentSenders.putIfAbsent(fragment.messageId(), senderName);
             Optional<byte[]> packetBytes = reassembler.accept(fragment);
             if (packetBytes.isEmpty()) {
+                if (config.showReceiveProgress) {
+                    reassembler.progress(fragment.messageId()).ifPresent(progress ->
+                            system.accept("[ObscuraLink] Receiving encrypted message from " + senderName + ": "
+                                    + progress.received() + "/" + progress.total()));
+                }
                 return;
+            }
+            fragmentSenders.remove(fragment.messageId());
+            if (config.showReceiveProgress) {
+                system.accept("[ObscuraLink] Encrypted message from " + senderName + " complete; decrypting...");
             }
             EncryptedPacket packet = packetCodec.decode(packetBytes.get());
             if (!packet.receiver().equalsIgnoreCase(keyStoreService.local().kemPublicKey().owner())) {
