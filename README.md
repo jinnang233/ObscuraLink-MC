@@ -43,6 +43,21 @@ gradle wrapper
 ./gradlew build
 ```
 
+## Releases
+
+GitHub Actions builds the mod and publishes release artifacts automatically when a tag matching `v*` is pushed:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow can also be triggered manually from the Actions tab. Manual builds are published as prereleases.
+
+## License
+
+ObscuraLink is licensed under the BSD Zero Clause License (`0BSD`), a very permissive license with no attribution requirement.
+
 ## Run Client
 
 ```bash

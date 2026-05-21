@@ -8,7 +8,7 @@
   "contact": {
     "sources": "https://example.invalid/obscuralink"
   },
-  "license": "MIT",
+  "license": "0BSD",
   "environment": "client",
   "entrypoints": {
     "client": [
