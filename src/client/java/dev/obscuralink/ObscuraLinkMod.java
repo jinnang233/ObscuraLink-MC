@@ -11,6 +11,7 @@ import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.service.DecryptionHistoryService;
 import dev.obscuralink.service.KeyStoreService;
 import dev.obscuralink.service.KeyTrustService;
+import dev.obscuralink.service.SentMessageCacheService;
 import dev.obscuralink.service.SessionService;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
@@ -38,6 +39,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
     private SessionService sessionService;
     private DecryptionHistoryService decryptionHistoryService;
     private KeyTrustService keyTrustService;
+    private SentMessageCacheService sentMessageCacheService;
     private ChatSendService chatSendService;
     private ChatReceiveHandler chatReceiveHandler;
 
@@ -60,6 +62,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
         sessionService = new SessionService(root);
         decryptionHistoryService = new DecryptionHistoryService(root);
         keyTrustService = new KeyTrustService(root);
+        sentMessageCacheService = new SentMessageCacheService(root);
 
         MinecraftClient client = MinecraftClient.getInstance();
         String owner = client.getSession().getUsername();
@@ -72,7 +75,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
             return;
         }
 
-        chatSendService = new ChatSendService(config, keyStoreService, keyTrustService, sessionService, cryptoService, packetCodec,
+        chatSendService = new ChatSendService(config, keyStoreService, keyTrustService, sessionService, sentMessageCacheService, cryptoService, packetCodec,
                 fragmentService, this::sendChatLine, this::system);
         chatReceiveHandler = new ChatReceiveHandler(config, keyStoreService, cryptoService, packetCodec, fragmentService,
                 reassembler, decryptionHistoryService, this::system);

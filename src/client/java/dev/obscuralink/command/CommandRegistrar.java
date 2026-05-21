@@ -67,6 +67,16 @@ public final class CommandRegistrar {
                                                             StringArgumentType.getString(ctx, "message"));
                                                     return 1;
                                                 }))))
+                        .then(ClientCommandManager.literal("resend")
+                                .executes(ctx -> {
+                                    chatSendService.resendLatest();
+                                    return 1;
+                                })
+                                .then(ClientCommandManager.argument("messageId", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            chatSendService.resend(StringArgumentType.getString(ctx, "messageId"));
+                                            return 1;
+                                        })))
                         .then(ClientCommandManager.literal("showalgs")
                                 .executes(ctx -> {
                                     feedback(ctx.getSource(), "KEM=" + config.kemAlgorithm

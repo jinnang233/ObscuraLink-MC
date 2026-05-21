@@ -3,6 +3,7 @@ package dev.obscuralink.chat;
 import dev.obscuralink.config.ObscuraLinkConfig;
 import dev.obscuralink.crypto.CryptoService;
 import dev.obscuralink.fragment.FragmentService;
+import dev.obscuralink.model.CachedSentMessage;
 import dev.obscuralink.model.EncryptedPacket;
 import dev.obscuralink.model.PublicIdentity;
 import dev.obscuralink.model.SessionRecord;
@@ -10,7 +11,9 @@ import dev.obscuralink.model.TrustState;
 import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.service.KeyStoreService;
 import dev.obscuralink.service.KeyTrustService;
+import dev.obscuralink.service.SentMessageCacheService;
 import dev.obscuralink.service.SessionService;
+import dev.obscuralink.util.Hex;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -20,6 +23,7 @@ public final class ChatSendService {
     private final KeyStoreService keyStoreService;
     private final KeyTrustService keyTrustService;
     private final SessionService sessionService;
+    private final SentMessageCacheService sentMessageCacheService;
     private final CryptoService cryptoService;
     private final PacketCodec packetCodec;
     private final FragmentService fragmentService;
@@ -27,13 +31,14 @@ public final class ChatSendService {
     private final Consumer<String> system;
 
     public ChatSendService(ObscuraLinkConfig config, KeyStoreService keyStoreService, KeyTrustService keyTrustService,
-                           SessionService sessionService,
+                           SessionService sessionService, SentMessageCacheService sentMessageCacheService,
                            CryptoService cryptoService, PacketCodec packetCodec, FragmentService fragmentService,
                            Consumer<String> chatSender, Consumer<String> system) {
         this.config = config;
         this.keyStoreService = keyStoreService;
         this.keyTrustService = keyTrustService;
         this.sessionService = sessionService;
+        this.sentMessageCacheService = sentMessageCacheService;
         this.cryptoService = cryptoService;
         this.packetCodec = packetCodec;
         this.fragmentService = fragmentService;
@@ -48,7 +53,7 @@ public final class ChatSendService {
             ensureSendAllowed(receiver, identity);
             EncryptedPacket packet = cryptoService.encryptFor(identity, keyStoreService.local(),
                     keyStoreService.local().kemPublicKey().owner(), message, sign, config.enableCompression);
-            sendPacket(packet);
+            sendPacket(packet, receiver);
             system.accept("[ObscuraLink] Sent encrypted message to " + receiver + ".");
         } catch (Exception e) {
             system.accept("[ObscuraLink][ERROR] " + e.getMessage());
@@ -74,9 +79,40 @@ public final class ChatSendService {
         sendKemMessage(receiver, message, true);
     }
 
-    private void sendPacket(EncryptedPacket packet) {
+    public void resendLatest() {
+        try {
+            CachedSentMessage cached = sentMessageCacheService.latest()
+                    .orElseThrow(() -> new IllegalStateException("No sent encrypted message is cached."));
+            resend(cached);
+        } catch (Exception e) {
+            system.accept("[ObscuraLink][ERROR] " + e.getMessage());
+        }
+    }
+
+    public void resend(String messageId) {
+        try {
+            CachedSentMessage cached = sentMessageCacheService.find(messageId)
+                    .orElseThrow(() -> new IllegalStateException("No cached encrypted message with id " + messageId + "."));
+            resend(cached);
+        } catch (Exception e) {
+            system.accept("[ObscuraLink][ERROR] " + e.getMessage());
+        }
+    }
+
+    private void resend(CachedSentMessage cached) {
+        sendFragments(cached.fragments());
+        system.accept("[ObscuraLink] Resending encrypted fragments for " + cached.receiver()
+                + " messageId=" + cached.messageId() + ".");
+    }
+
+    private void sendPacket(EncryptedPacket packet, String receiver) throws Exception {
         byte[] encoded = packetCodec.encode(packet);
         List<String> fragments = fragmentService.fragment(encoded, packet.messageId(), config.fragmentSize);
+        sentMessageCacheService.remember(Hex.encode(packet.messageId()), receiver, fragments);
+        sendFragments(fragments);
+    }
+
+    private void sendFragments(List<String> fragments) {
         Thread sender = new Thread(() -> {
             for (String fragment : fragments) {
                 chatSender.accept(fragment);
