@@ -3,6 +3,9 @@
 > [!WARNING]
 > This codebase was generated with AI assistance. Review the implementation carefully, especially the cryptography, key storage, networking behavior, and dependency configuration, before using it in any real environment.
 
+> [!WARNING]
+> ObscuraLink is experimental software and has not undergone independent security auditing. The protocol, implementation, and cryptographic design may contain vulnerabilities or design flaws. Do not rely on this mod to protect highly sensitive, important, or production-critical data. If you require mature and battle-tested end-to-end encrypted communication, consider using established tools such as Signal or SimpleX instead.
+
 ObscuraLink is a Fabric client mod that transports post-quantum encrypted chat packets through ordinary Minecraft chat. It uses compact binary packets, Base64URL transport encoding, automatic fragmentation, TOFU public-key storage, and authenticated AEAD encryption.
 
 ## Features
