@@ -87,6 +87,17 @@ public final class ChatSendService {
         }
     }
 
+    public void sendGroupMessage(String groupName, List<String> members, String message) {
+        if (members.isEmpty()) {
+            system.accept("[ObscuraLink][ERROR] Group " + groupName + " has no members.");
+            return;
+        }
+        system.accept("[ObscuraLink] Sending encrypted group message to " + groupName + " (" + members.size() + " members).");
+        for (String member : members) {
+            sendKemMessage(member, message, true);
+        }
+    }
+
     public void resendLatest() {
         try {
             CachedSentMessage cached = sentMessageCacheService.latest()

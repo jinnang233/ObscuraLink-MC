@@ -3,10 +3,12 @@ package dev.obscuralink.command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.obscuralink.chat.ChatSendService;
 import dev.obscuralink.config.ObscuraLinkConfig;
+import dev.obscuralink.model.GroupRecord;
 import dev.obscuralink.model.PublicIdentity;
 import dev.obscuralink.model.SessionRecord;
 import dev.obscuralink.model.TrustState;
 import dev.obscuralink.service.DecryptionHistoryService;
+import dev.obscuralink.service.GroupService;
 import dev.obscuralink.service.KeyStoreService;
 import dev.obscuralink.service.KeyTrustService;
 import dev.obscuralink.service.SessionService;
@@ -19,6 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 public final class CommandRegistrar {
     private static final DateTimeFormatter STATUS_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -29,7 +32,8 @@ public final class CommandRegistrar {
 
     public static void register(ChatSendService chatSendService, KeyStoreService keyStoreService,
                                 KeyTrustService keyTrustService, SessionService sessionService,
-                                DecryptionHistoryService decryptionHistoryService, ObscuraLinkConfig config) {
+                                DecryptionHistoryService decryptionHistoryService, GroupService groupService,
+                                ObscuraLinkConfig config) {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
                 ClientCommandManager.literal("enc")
                         .then(ClientCommandManager.literal("tell")
@@ -65,6 +69,68 @@ public final class CommandRegistrar {
                                                     chatSendService.sendSessionMessage(
                                                             StringArgumentType.getString(ctx, "receiver"),
                                                             StringArgumentType.getString(ctx, "message"));
+                                                    return 1;
+                                                }))))
+                        .then(ClientCommandManager.literal("gtell")
+                                .then(ClientCommandManager.argument("group", StringArgumentType.word())
+                                        .then(ClientCommandManager.argument("message", StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    String group = StringArgumentType.getString(ctx, "group");
+                                                    try {
+                                                        GroupRecord record = groupService.find(group)
+                                                                .orElseThrow(() -> new IllegalStateException("No group named " + group));
+                                                        chatSendService.sendGroupMessage(record.name(), record.members(),
+                                                                StringArgumentType.getString(ctx, "message"));
+                                                    } catch (Exception e) {
+                                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                        return 0;
+                                                    }
+                                                    return 1;
+                                                }))))
+                        .then(ClientCommandManager.literal("group")
+                                .then(ClientCommandManager.literal("create")
+                                        .then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                                .then(ClientCommandManager.argument("members", StringArgumentType.greedyString())
+                                                        .executes(ctx -> {
+                                                            String name = StringArgumentType.getString(ctx, "name");
+                                                            List<String> members = parseMembers(StringArgumentType.getString(ctx, "members"));
+                                                            try {
+                                                                GroupRecord group = groupService.create(name, members);
+                                                                feedback(ctx.getSource(), "Created group " + group.name()
+                                                                        + " with " + group.members().size() + " members.");
+                                                            } catch (Exception e) {
+                                                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                                return 0;
+                                                            }
+                                                            return 1;
+                                                        }))))
+                                .then(ClientCommandManager.literal("list")
+                                        .executes(ctx -> {
+                                            try {
+                                                List<GroupRecord> groups = groupService.list();
+                                                if (groups.isEmpty()) {
+                                                    feedback(ctx.getSource(), "No groups.");
+                                                }
+                                                for (GroupRecord group : groups) {
+                                                    feedback(ctx.getSource(), group.name() + ": " + String.join(", ", group.members()));
+                                                }
+                                                return groups.size();
+                                            } catch (Exception e) {
+                                                feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                return 0;
+                                            }
+                                        }))
+                                .then(ClientCommandManager.literal("delete")
+                                        .then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    String name = StringArgumentType.getString(ctx, "name");
+                                                    try {
+                                                        groupService.delete(name);
+                                                        feedback(ctx.getSource(), "Deleted group " + name + ".");
+                                                    } catch (Exception e) {
+                                                        feedback(ctx.getSource(), "ERROR: " + e.getMessage());
+                                                        return 0;
+                                                    }
                                                     return 1;
                                                 }))))
                         .then(ClientCommandManager.literal("resend")
@@ -292,6 +358,13 @@ public final class CommandRegistrar {
         } catch (Exception e) {
             feedback(source, "ERROR: " + e.getMessage());
         }
+    }
+
+    private static List<String> parseMembers(String raw) {
+        return Pattern.compile("[,\\s]+")
+                .splitAsStream(raw.trim())
+                .filter(value -> !value.isBlank())
+                .toList();
     }
 
     private static void feedback(FabricClientCommandSource source, String message) {

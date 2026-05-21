@@ -9,6 +9,7 @@ import dev.obscuralink.fragment.FragmentReassembler;
 import dev.obscuralink.fragment.FragmentService;
 import dev.obscuralink.protocol.PacketCodec;
 import dev.obscuralink.service.DecryptionHistoryService;
+import dev.obscuralink.service.GroupService;
 import dev.obscuralink.service.KeyStoreService;
 import dev.obscuralink.service.KeyTrustService;
 import dev.obscuralink.service.SentMessageCacheService;
@@ -38,6 +39,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
     private KeyStoreService keyStoreService;
     private SessionService sessionService;
     private DecryptionHistoryService decryptionHistoryService;
+    private GroupService groupService;
     private KeyTrustService keyTrustService;
     private SentMessageCacheService sentMessageCacheService;
     private ChatSendService chatSendService;
@@ -61,6 +63,7 @@ public final class ObscuraLinkMod implements ClientModInitializer {
         keyStoreService = new KeyStoreService(root, cryptoService);
         sessionService = new SessionService(root);
         decryptionHistoryService = new DecryptionHistoryService(root);
+        groupService = new GroupService(root);
         keyTrustService = new KeyTrustService(root);
         sentMessageCacheService = new SentMessageCacheService(root);
 
@@ -80,7 +83,8 @@ public final class ObscuraLinkMod implements ClientModInitializer {
         chatReceiveHandler = new ChatReceiveHandler(config, keyStoreService, cryptoService, packetCodec, fragmentService,
                 reassembler, decryptionHistoryService, this::system);
 
-        CommandRegistrar.register(chatSendService, keyStoreService, keyTrustService, sessionService, decryptionHistoryService, config);
+        CommandRegistrar.register(chatSendService, keyStoreService, keyTrustService, sessionService, decryptionHistoryService,
+                groupService, config);
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             String senderName = sender == null ? "unknown" : sender.getName();
             String raw = message.getString();
