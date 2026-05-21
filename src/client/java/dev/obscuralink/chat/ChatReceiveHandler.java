@@ -8,6 +8,7 @@ import dev.obscuralink.model.EncryptedPacket;
 import dev.obscuralink.model.Fragment;
 import dev.obscuralink.model.PublicIdentity;
 import dev.obscuralink.protocol.PacketCodec;
+import dev.obscuralink.service.DecryptionHistoryService;
 import dev.obscuralink.service.KeyStoreService;
 
 import java.util.Optional;
@@ -21,17 +22,19 @@ public final class ChatReceiveHandler {
     private final PacketCodec packetCodec;
     private final FragmentService fragmentService;
     private final FragmentReassembler reassembler;
+    private final DecryptionHistoryService decryptionHistoryService;
     private final Consumer<String> system;
 
     public ChatReceiveHandler(ObscuraLinkConfig config, KeyStoreService keyStoreService, CryptoService cryptoService,
                               PacketCodec packetCodec, FragmentService fragmentService, FragmentReassembler reassembler,
-                              Consumer<String> system) {
+                              DecryptionHistoryService decryptionHistoryService, Consumer<String> system) {
         this.config = config;
         this.keyStoreService = keyStoreService;
         this.cryptoService = cryptoService;
         this.packetCodec = packetCodec;
         this.fragmentService = fragmentService;
         this.reassembler = reassembler;
+        this.decryptionHistoryService = decryptionHistoryService;
         this.system = system;
     }
 
@@ -60,6 +63,7 @@ public final class ChatReceiveHandler {
             PublicIdentity sender = keyStoreService.findPublicIdentity(packet.sender())
                     .orElseThrow(() -> new IllegalStateException("No public key for sender " + packet.sender()));
             String plaintext = cryptoService.decrypt(packet, keyStoreService.local(), sender);
+            decryptionHistoryService.recordSuccess(packet.sender());
             String status = packet.signed() ? "VALID" : "UNSIGNED";
             system.accept("[Encrypted][" + packet.sender() + "][" + status + "]: " + plaintext);
         } catch (Exception e) {
