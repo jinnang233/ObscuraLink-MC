@@ -37,26 +37,55 @@ jobs:
         run: |
           mkdir -p release-artifacts
           find build/libs -maxdepth 1 -type f -name "*.jar" \
-            ! -name "*-sources.jar" \
             ! -name "*-dev.jar" \
             -exec cp {} release-artifacts/ \;
           ls -la release-artifacts
+
       - name: Generate snapshot tag
         id: snapshot
         shell: bash
         run: |
           echo "tag=snapshot-$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "name=Snapshot $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"
+
       - name: Malware Scanner
         uses: dell/common-github-actions/malware-scanner@main
         with:
           options: -ri
+
+      - name: Sign release artifacts
+        shell: bash
+        env:
+          SIGN_PRIVATE_KEY: ${{ secrets.SIGN_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          trap 'rm -f private_key.pem; echo "Cleaned up private key."' EXIT
+          umask 077
+          printf '%s\n' "$SIGN_PRIVATE_KEY" >private_key.pem
+
+          files=(release-artifacts/*.jar)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No JAR files found to sign"
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            openssl dgst -sha512 \
+              -sign private_key.pem \
+              -out "${file}.sign" \
+              "$file"
+          done
+          rm -f private_key.pem
+          ls -la release-artifacts
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || steps.snapshot.outputs.tag }}
           name: ${{ github.ref_type == 'tag' && github.ref_name || steps.snapshot.outputs.name }}
           target_commitish: ${{ github.sha }}
-          files: release-artifacts/*.jar
+          files: |
+            release-artifacts/*.jar
+            release-artifacts/*.jar.sign
           generate_release_notes: true
           prerelease: ${{ github.ref_type != 'tag' }}
