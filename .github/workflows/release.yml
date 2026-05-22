@@ -61,7 +61,7 @@ jobs:
       - name: Sign release artifacts
         shell: bash
         env:
-          SIGN_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          SIGN_PRIVATE_KEY: ${{ secrets.RELEASE_SIGN_KEY }}
         run: |
           set -euo pipefail
           shopt -s nullglob
