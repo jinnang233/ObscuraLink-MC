@@ -18,6 +18,7 @@ jobs:
       - name: Check OpenSSL Version
         shell: bash
         run: |
+          pwd
           docker run --rm \
               -v "$PWD:/work" \
               -w /work \
