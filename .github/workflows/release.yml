@@ -78,10 +78,14 @@ jobs:
             exit 1
           fi
           for file in "${files[@]}"; do
-            openssl dgst -sha512 \
-              -sign private_key.pem \
-              -out "${file}.sign" \
-              "$file"
+            docker run --rm \
+              -v "$PWD:/work" \
+              -w /work \
+              alpine/openssl \
+              dgst -sha512 \
+              -sign /work/private_key.pem \
+              -out "/work/${file}.sign" \
+              "/work/${file}"
           done
           rm -f private_key.pem
           ls -la release-artifacts
