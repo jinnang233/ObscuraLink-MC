@@ -17,7 +17,8 @@ jobs:
     steps:
       - name: Check OpenSSL Version
         shell: bash
-        run: docker run --rm \
+        run: |
+          docker run --rm \
               -v "$PWD:/work" \
               -w /work \
               alpine/openssl version
