@@ -21,7 +21,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.14
+        run: gradle wrapper --gradle-version 8.14.3
 
       - name: Commit wrapper files
         run: |
