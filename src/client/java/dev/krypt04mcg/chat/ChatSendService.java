@@ -48,7 +48,7 @@ public final class ChatSendService {
         this.system = system;
     }
 
-    public void sendKemMessage(String receiver, String message, boolean sign) {
+    public boolean sendKemMessage(String receiver, String message, boolean sign) {
         try {
             PublicIdentity identity = keyStoreService.findPublicIdentity(receiver)
                     .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.krypt04mcg.error.no_public_key", receiver)));
@@ -57,25 +57,31 @@ public final class ChatSendService {
                     keyStoreService.local().kemPublicKey().owner(), message, sign, config.enableCompression);
             sendPacket(packet, receiver);
             system.accept(ClientMessages.tr("text.krypt04mcg.sent_encrypted", receiver));
+            return true;
         } catch (Exception e) {
             error(e);
+            return false;
         }
     }
 
-    public void exchange(String receiver) {
+    public boolean exchange(String receiver) {
         try {
             PublicIdentity identity = keyStoreService.findPublicIdentity(receiver)
                     .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.krypt04mcg.error.no_public_key", receiver)));
             ensureSendAllowed(receiver, identity);
             SessionRecord record = sessionService.createLocalSession(receiver, identity.kemPublicKey().fingerprint());
-            sendKemMessage(receiver, "/session " + record.sessionId() + " " + record.secret(), true);
+            if (!sendKemMessage(receiver, "/session " + record.sessionId() + " " + record.secret(), true)) {
+                return false;
+            }
             system.accept(ClientMessages.tr("text.krypt04mcg.session_prepared", receiver));
+            return true;
         } catch (Exception e) {
             error(e);
+            return false;
         }
     }
 
-    public void sendSessionMessage(String receiver, String message) {
+    public boolean sendSessionMessage(String receiver, String message) {
         try {
             SessionRecord session = sessionService.find(receiver)
                     .orElseThrow(() -> new IllegalStateException(ClientMessages.tr("text.krypt04mcg.error.no_session", receiver)));
@@ -91,8 +97,10 @@ public final class ChatSendService {
             sendPacket(packet, receiver);
             sessionService.recordMessage(receiver, message.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
             system.accept(ClientMessages.tr("text.krypt04mcg.sent_encrypted", receiver));
+            return true;
         } catch (Exception e) {
             error(e);
+            return false;
         }
     }
 

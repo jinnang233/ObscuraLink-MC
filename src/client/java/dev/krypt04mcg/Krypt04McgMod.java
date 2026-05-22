@@ -1,6 +1,7 @@
 package dev.krypt04mcg;
 
 import dev.krypt04mcg.chat.ChatReceiveHandler;
+import dev.krypt04mcg.chat.ChatConversationStore;
 import dev.krypt04mcg.chat.ChatSendService;
 import dev.krypt04mcg.client.ClientMessages;
 import dev.krypt04mcg.command.CommandRegistrar;
@@ -47,6 +48,7 @@ public final class Krypt04McgMod implements ClientModInitializer {
     private SentMessageCacheService sentMessageCacheService;
     private ChatSendService chatSendService;
     private ChatReceiveHandler chatReceiveHandler;
+    private ChatConversationStore conversationStore;
 
     public static Krypt04McgMod instance() {
         return instance;
@@ -69,6 +71,7 @@ public final class Krypt04McgMod implements ClientModInitializer {
         groupService = new GroupService(root);
         keyTrustService = new KeyTrustService(root);
         sentMessageCacheService = new SentMessageCacheService(root);
+        conversationStore = new ChatConversationStore();
 
         Minecraft client = Minecraft.getInstance();
         String owner = client.getUser().getName();
@@ -84,7 +87,7 @@ public final class Krypt04McgMod implements ClientModInitializer {
         chatSendService = new ChatSendService(config, keyStoreService, keyTrustService, sessionService, sentMessageCacheService, cryptoService, packetCodec,
                 fragmentService, this::sendChatLine, this::system);
         chatReceiveHandler = new ChatReceiveHandler(config, keyStoreService, cryptoService, packetCodec, fragmentService,
-                reassembler, decryptionHistoryService, sessionService, this::system);
+                reassembler, decryptionHistoryService, sessionService, this::system, conversationStore::incoming);
 
         CommandRegistrar.register(chatSendService, keyStoreService, keyTrustService, sessionService, decryptionHistoryService,
                 groupService, config);
@@ -112,7 +115,7 @@ public final class Krypt04McgMod implements ClientModInitializer {
         if (chatSendService == null || keyStoreService == null || client.player == null) {
             return;
         }
-        client.setScreen(new Krypt04McgChatScreen(chatSendService, keyStoreService));
+        client.setScreen(new Krypt04McgChatScreen(chatSendService, keyStoreService, conversationStore));
     }
 
     private void sendChatLine(String line) {

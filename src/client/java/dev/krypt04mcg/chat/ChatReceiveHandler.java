@@ -20,6 +20,7 @@ import dev.krypt04mcg.util.Base64Url;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -34,11 +35,12 @@ public final class ChatReceiveHandler {
     private final SessionService sessionService;
     private final ConcurrentMap<String, String> fragmentSenders = new ConcurrentHashMap<>();
     private final Consumer<String> system;
+    private final BiConsumer<String, String> decryptedMessageSink;
 
     public ChatReceiveHandler(Krypt04McgConfig config, KeyStoreService keyStoreService, CryptoService cryptoService,
                               PacketCodec packetCodec, FragmentService fragmentService, FragmentReassembler reassembler,
                               DecryptionHistoryService decryptionHistoryService, SessionService sessionService,
-                              Consumer<String> system) {
+                              Consumer<String> system, BiConsumer<String, String> decryptedMessageSink) {
         this.config = config;
         this.keyStoreService = keyStoreService;
         this.cryptoService = cryptoService;
@@ -48,6 +50,7 @@ public final class ChatReceiveHandler {
         this.decryptionHistoryService = decryptionHistoryService;
         this.sessionService = sessionService;
         this.system = system;
+        this.decryptedMessageSink = decryptedMessageSink;
     }
 
     public boolean shouldHide(String raw) {
@@ -113,6 +116,7 @@ public final class ChatReceiveHandler {
             String status = packet.signed()
                     ? ClientMessages.tr("text.krypt04mcg.signature.valid")
                     : ClientMessages.tr("text.krypt04mcg.signature.unsigned");
+            decryptedMessageSink.accept(packet.sender(), plaintext);
             system.accept(ClientMessages.tr("text.krypt04mcg.decrypt_display", packet.sender(), status, plaintext));
         } catch (Exception e) {
             system.accept(ClientMessages.tr("text.krypt04mcg.decrypt_invalid", senderName, e.getMessage()));
