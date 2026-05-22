@@ -18,10 +18,7 @@ jobs:
       - name: Check OpenSSL Version
         shell: bash
         run: |
-          pwd
           docker run --rm \
-              -v "$PWD:/work" \
-              -w /work \
               alpine/openssl version
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,12 +74,16 @@ jobs:
             echo "No JAR files found to sign"
             exit 1
           fi
+          docker run --rm \
+              -v "$PWD:/work" \
+              -w /work \
+              alpine/openssl pkey -pubout -in /work/private_key.pem -out /work/public_key.pem
           for file in "${files[@]}"; do
             docker run --rm \
               -v "$PWD:/work" \
               -w /work \
               alpine/openssl \
-              dgst -sha512 \
+              dgst \
               -sign /work/private_key.pem \
               -out "/work/${file}.sign" \
               "/work/${file}"
@@ -99,5 +100,6 @@ jobs:
           files: |
             release-artifacts/*.jar
             release-artifacts/*.jar.sign
+            public_key.pem
           generate_release_notes: true
           prerelease: ${{ github.ref_type != 'tag' }}
