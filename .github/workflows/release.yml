@@ -41,12 +41,21 @@ jobs:
             ! -name "*-dev.jar" \
             -exec cp {} release-artifacts/ \;
           ls -la release-artifacts
-
+      - name: Generate snapshot tag
+        id: snapshot
+        shell: bash
+        run: |
+          echo "tag=snapshot-$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+          echo "name=Snapshot $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"
+      - name: Malware Scanner
+        uses: dell/common-github-actions/malware-scanner@main
+        with:
+          options: -ri
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('manual-{0}', github.run_number) }}
-          name: ${{ github.ref_type == 'tag' && github.ref_name || format('Manual build {0}', github.run_number) }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || steps.snapshot.outputs.tag }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || steps.snapshot.outputs.name }}
           target_commitish: ${{ github.sha }}
           files: release-artifacts/*.jar
           generate_release_notes: true
