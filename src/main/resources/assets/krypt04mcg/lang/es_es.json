@@ -20,6 +20,8 @@
   "modmenu.nameTranslation.krypt04mcg": "Krypt04Mcg",
   "modmenu.descriptionTranslation.krypt04mcg": "Chat de Minecraft cifrado poscuántico transmitido mediante fragmentos de chat normales.",
   "modmenu.summaryTranslation.krypt04mcg": "Chat de Minecraft cifrado poscuántico.",
+  "key.category.krypt04mcg.krypt04mcg": "Krypt04Mcg",
+  "key.krypt04mcg.open_chat_gui": "Abrir panel de chat cifrado",
   "text.krypt04mcg.sent_encrypted": "[Krypt04Mcg] Mensaje cifrado enviado a %s.",
   "text.krypt04mcg.session_prepared": "[Krypt04Mcg] Session material prepared for %s.",
   "text.krypt04mcg.fragment_sent": "[Krypt04Mcg] Fragment sent.",

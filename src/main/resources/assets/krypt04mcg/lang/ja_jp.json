@@ -20,6 +20,8 @@
   "modmenu.nameTranslation.krypt04mcg": "Krypt04Mcg",
   "modmenu.descriptionTranslation.krypt04mcg": "通常の Minecraft チャット断片を使って送る、耐量子暗号チャット Mod。",
   "modmenu.summaryTranslation.krypt04mcg": "耐量子 Minecraft 暗号化チャット。",
+  "key.category.krypt04mcg.krypt04mcg": "Krypt04Mcg",
+  "key.krypt04mcg.open_chat_gui": "暗号化チャットパネルを開く",
   "text.krypt04mcg.sent_encrypted": "[Krypt04Mcg] %s に暗号化メッセージを送信しました。",
   "text.krypt04mcg.session_prepared": "[Krypt04Mcg] %s 用のセッション素材を準備しました。",
   "text.krypt04mcg.fragment_sent": "[Krypt04Mcg] フラグメントを送信しました。",

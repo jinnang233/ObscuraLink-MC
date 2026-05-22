@@ -20,6 +20,8 @@
   "modmenu.nameTranslation.krypt04mcg": "Krypt04Mcg",
   "modmenu.descriptionTranslation.krypt04mcg": "일반 Minecraft 채팅 조각으로 전송하는 후양자 암호화 채팅 Mod.",
   "modmenu.summaryTranslation.krypt04mcg": "후양자 Minecraft 암호화 채팅.",
+  "key.category.krypt04mcg.krypt04mcg": "Krypt04Mcg",
+  "key.krypt04mcg.open_chat_gui": "암호화 채팅 패널 열기",
   "text.krypt04mcg.sent_encrypted": "[Krypt04Mcg] %s에게 암호화 메시지를 보냈습니다.",
   "text.krypt04mcg.session_prepared": "[Krypt04Mcg] %s용 세션 자료를 준비했습니다.",
   "text.krypt04mcg.fragment_sent": "[Krypt04Mcg] 조각을 보냈습니다.",

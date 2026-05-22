@@ -8,6 +8,8 @@ import dev.krypt04mcg.config.Krypt04McgConfig;
 import dev.krypt04mcg.crypto.CryptoService;
 import dev.krypt04mcg.fragment.FragmentReassembler;
 import dev.krypt04mcg.fragment.FragmentService;
+import dev.krypt04mcg.gui.Krypt04McgChatScreen;
+import dev.krypt04mcg.input.Krypt04McgKeyBindings;
 import dev.krypt04mcg.protocol.PacketCodec;
 import dev.krypt04mcg.service.DecryptionHistoryService;
 import dev.krypt04mcg.service.GroupService;
@@ -86,6 +88,7 @@ public final class Krypt04McgMod implements ClientModInitializer {
 
         CommandRegistrar.register(chatSendService, keyStoreService, keyTrustService, sessionService, decryptionHistoryService,
                 groupService, config);
+        Krypt04McgKeyBindings.register(this);
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             String senderName = sender == null ? "unknown" : sender.name();
             String raw = message.getString();
@@ -102,6 +105,14 @@ public final class Krypt04McgMod implements ClientModInitializer {
             return shadowMessage.map(value -> !chatReceiveHandler.shouldHide(value.message())).orElse(true);
         });
         LOGGER.info("Krypt04Mcg initialized");
+    }
+
+    public void openChatScreen() {
+        Minecraft client = Minecraft.getInstance();
+        if (chatSendService == null || keyStoreService == null || client.player == null) {
+            return;
+        }
+        client.setScreen(new Krypt04McgChatScreen(chatSendService, keyStoreService));
     }
 
     private void sendChatLine(String line) {

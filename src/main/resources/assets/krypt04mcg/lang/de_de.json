@@ -20,6 +20,8 @@
   "modmenu.nameTranslation.krypt04mcg": "Krypt04Mcg",
   "modmenu.descriptionTranslation.krypt04mcg": "Post-quantenverschlüsselter Minecraft-Chat über normale Chat-Fragmente.",
   "modmenu.summaryTranslation.krypt04mcg": "Post-quantenverschlüsselter Minecraft-Chat.",
+  "key.category.krypt04mcg.krypt04mcg": "Krypt04Mcg",
+  "key.krypt04mcg.open_chat_gui": "Verschlüsseltes Chatfenster öffnen",
   "text.krypt04mcg.sent_encrypted": "[Krypt04Mcg] Verschlüsselte Nachricht an %s gesendet.",
   "text.krypt04mcg.session_prepared": "[Krypt04Mcg] Sitzung für %s vorbereitet.",
   "text.krypt04mcg.fragment_sent": "[Krypt04Mcg] Fragment gesendet.",

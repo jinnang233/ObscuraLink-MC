@@ -20,6 +20,8 @@
   "modmenu.nameTranslation.krypt04mcg": "Krypt04Mcg",
   "modmenu.descriptionTranslation.krypt04mcg": "Chat Minecraft chiffré post-quantique transmis par fragments de chat ordinaires.",
   "modmenu.summaryTranslation.krypt04mcg": "Chat Minecraft chiffré post-quantique.",
+  "key.category.krypt04mcg.krypt04mcg": "Krypt04Mcg",
+  "key.krypt04mcg.open_chat_gui": "Ouvrir le panneau de chat chiffré",
   "text.krypt04mcg.sent_encrypted": "[Krypt04Mcg] Message chiffré envoyé à %s.",
   "text.krypt04mcg.session_prepared": "[Krypt04Mcg] Session material prepared for %s.",
   "text.krypt04mcg.fragment_sent": "[Krypt04Mcg] Fragment sent.",

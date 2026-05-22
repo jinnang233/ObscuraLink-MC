@@ -20,6 +20,8 @@
   "modmenu.nameTranslation.krypt04mcg": "Krypt04Mcg",
   "modmenu.descriptionTranslation.krypt04mcg": "透過普通 Minecraft 聊天分片傳輸的後量子加密聊天 Mod。",
   "modmenu.summaryTranslation.krypt04mcg": "後量子加密 Minecraft 聊天。",
+  "key.category.krypt04mcg.krypt04mcg": "Krypt04Mcg",
+  "key.krypt04mcg.open_chat_gui": "開啟加密聊天面板",
   "text.krypt04mcg.sent_encrypted": "[Krypt04Mcg] 已向 %s 傳送加密訊息。",
   "text.krypt04mcg.session_prepared": "[Krypt04Mcg] 已為 %s 準備會話材料。",
   "text.krypt04mcg.fragment_sent": "[Krypt04Mcg] 分片已傳送。",
