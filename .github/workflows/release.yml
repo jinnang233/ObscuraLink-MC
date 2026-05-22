@@ -102,4 +102,3 @@ jobs:
             release-artifacts/*.jar.sign
             public_key.pem
           generate_release_notes: true
-          prerelease: ${{ github.ref_type != 'tag' }}
