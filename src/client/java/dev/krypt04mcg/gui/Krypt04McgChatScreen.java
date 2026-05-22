@@ -10,6 +10,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -30,7 +31,6 @@ public final class Krypt04McgChatScreen extends Screen {
     private final KeyStoreService keyStoreService;
     private final ChatConversationStore conversationStore;
     private final List<String> players = new ArrayList<>();
-    private final List<Button> playerButtons = new ArrayList<>();
     private EditBox playerBox;
     private EditBox messageBox;
     private int selectedPlayer;
@@ -39,6 +39,7 @@ public final class Krypt04McgChatScreen extends Screen {
     private int panelWidth;
     private int panelHeight;
     private int listWidth;
+    private int listScrollOffset;
 
     public Krypt04McgChatScreen(ChatSendService chatSendService, KeyStoreService keyStoreService,
                                 ChatConversationStore conversationStore) {
@@ -56,8 +57,6 @@ public final class Krypt04McgChatScreen extends Screen {
         panelX = (width - panelWidth) / 2;
         panelY = Math.max(16, (height - panelHeight) / 2);
         listWidth = Math.min(170, Math.max(126, panelWidth / 3));
-
-        addPlayerButtons();
 
         int rightX = panelX + listWidth + 14;
         int rightWidth = panelWidth - listWidth - 28;
@@ -96,6 +95,7 @@ public final class Krypt04McgChatScreen extends Screen {
         graphics.fill(panelX, panelY + 26, panelX + listWidth, panelY + panelHeight, LIST_COLOR);
         graphics.text(font, title, panelX + 12, panelY + 9, 0xE8F3FF, false);
         graphics.text(font, Component.translatable("text.krypt04mcg.gui.players"), panelX + 12, panelY + 36, 0xAFC4D6, false);
+        drawPlayerList(graphics);
 
         String receiver = currentReceiver();
         int rightX = panelX + listWidth + 14;
@@ -126,22 +126,55 @@ public final class Krypt04McgChatScreen extends Screen {
     }
 
     @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        int listX = panelX + 8;
+        int listY = panelY + 50;
+        int rowHeight = 20;
+        int visibleRows = visiblePlayerRows();
+        if (event.x() >= listX && event.x() <= panelX + listWidth - 8
+                && event.y() >= listY && event.y() < listY + visibleRows * rowHeight) {
+            int index = listScrollOffset + (int) ((event.y() - listY) / rowHeight);
+            if (index >= 0 && index < players.size()) {
+                selectPlayer(index);
+                return true;
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (mouseX >= panelX && mouseX <= panelX + listWidth
+                && mouseY >= panelY + 26 && mouseY <= panelY + panelHeight) {
+            int maxOffset = Math.max(0, players.size() - visiblePlayerRows());
+            listScrollOffset = Math.clamp(listScrollOffset - (int) Math.signum(scrollY), 0, maxOffset);
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
     public boolean isPauseScreen() {
         return false;
     }
 
-    private void addPlayerButtons() {
-        playerButtons.clear();
-        int buttonY = panelY + 50;
-        int visibleRows = Math.max(0, (panelHeight - 64) / 22);
-        for (int i = 0; i < Math.min(players.size(), visibleRows); i++) {
-            int index = i;
-            Button button = Button.builder(Component.literal(players.get(i)), ignored -> selectPlayer(index))
-                    .bounds(panelX + 10, buttonY + i * 22, listWidth - 20, 20)
-                    .build();
-            playerButtons.add(button);
-            addRenderableWidget(button);
+    private void drawPlayerList(GuiGraphicsExtractor graphics) {
+        int listX = panelX + 8;
+        int listY = panelY + 50;
+        int rowHeight = 20;
+        int rows = Math.min(players.size() - listScrollOffset, visiblePlayerRows());
+        for (int i = 0; i < rows; i++) {
+            int playerIndex = listScrollOffset + i;
+            int y = listY + i * rowHeight;
+            if (playerIndex == selectedPlayer) {
+                graphics.fill(listX, y, panelX + listWidth - 8, y + 18, SELECTED_COLOR);
+            }
+            graphics.text(font, truncate(players.get(playerIndex), listWidth - 28), listX + 6, y + 5, 0xE8F3FF, false);
         }
+    }
+
+    private int visiblePlayerRows() {
+        return Math.max(0, (panelHeight - 64) / 20);
     }
 
     private void selectPlayer(int index) {
@@ -149,7 +182,18 @@ public final class Krypt04McgChatScreen extends Screen {
             return;
         }
         selectedPlayer = index;
+        ensureSelectedPlayerVisible();
         playerBox.setValue(players.get(selectedPlayer));
+    }
+
+    private void ensureSelectedPlayerVisible() {
+        int visibleRows = visiblePlayerRows();
+        if (selectedPlayer < listScrollOffset) {
+            listScrollOffset = selectedPlayer;
+        } else if (selectedPlayer >= listScrollOffset + visibleRows) {
+            listScrollOffset = selectedPlayer - visibleRows + 1;
+        }
+        listScrollOffset = Math.clamp(listScrollOffset, 0, Math.max(0, players.size() - visibleRows));
     }
 
     private void drawHistory(GuiGraphicsExtractor graphics, String receiver, int x, int y, int width, int height) {
@@ -171,22 +215,42 @@ public final class Krypt04McgChatScreen extends Screen {
         List<String> lines = new ArrayList<>();
         for (ChatConversationStore.Entry entry : conversationStore.messagesFor(receiver)) {
             String prefix = entry.outgoing() ? "> " : "< ";
-            for (String wrapped : wrap(prefix + entry.message(), Math.max(12, width / 6))) {
+            for (String wrapped : wrap(prefix + entry.message(), width)) {
                 lines.add(wrapped);
             }
         }
         return lines;
     }
 
-    private List<String> wrap(String text, int maxChars) {
+    private List<String> wrap(String text, int maxWidth) {
         List<String> lines = new ArrayList<>();
         String remaining = text;
-        while (remaining.length() > maxChars) {
-            lines.add(remaining.substring(0, maxChars));
-            remaining = "  " + remaining.substring(maxChars);
+        while (font.width(remaining) > maxWidth) {
+            String line = font.plainSubstrByWidth(remaining, maxWidth);
+            if (line.isEmpty()) {
+                int end = remaining.offsetByCodePoints(0, 1);
+                line = remaining.substring(0, end);
+            }
+            int breakAt = line.lastIndexOf(' ');
+            if (breakAt > 2 && line.length() < remaining.length()) {
+                line = line.substring(0, breakAt);
+            }
+            lines.add(line);
+            remaining = remaining.substring(line.length()).stripLeading();
+            if (!remaining.isEmpty()) {
+                remaining = "  " + remaining;
+            }
         }
         lines.add(remaining);
         return lines;
+    }
+
+    private String truncate(String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String suffix = "...";
+        return font.plainSubstrByWidth(text, Math.max(1, maxWidth - font.width(suffix))) + suffix;
     }
 
     private void sendSigned() {
