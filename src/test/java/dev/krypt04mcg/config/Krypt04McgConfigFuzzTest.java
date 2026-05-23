@@ -3,6 +3,7 @@ package dev.krypt04mcg.config;
 import dev.krypt04mcg.util.JsonSupport;
 import org.junit.jupiter.api.Test;
 
+import java.security.SecureRandom;
 import java.util.Random;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -11,12 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 final class Krypt04McgConfigFuzzTest {
-    private static final long SEED = 0x434F4E464947L;
+    private static final SecureRandom SEED_RANDOM = new SecureRandom();
     private static final int CASES = 200;
 
     @Test
     void randomizedConfigsJsonRoundTrip() {
-        Random random = new Random(SEED);
+        Random random = random("randomizedConfigsJsonRoundTrip");
 
         for (int i = 0; i < CASES; i++) {
             Krypt04McgConfig config = randomConfig(random);
@@ -47,7 +48,7 @@ final class Krypt04McgConfigFuzzTest {
 
     @Test
     void randomizedRegexConfigsCompileOrFailCleanly() {
-        Random random = new Random(SEED ^ 0x5245474558L);
+        Random random = random("randomizedRegexConfigsCompileOrFailCleanly");
 
         for (int i = 0; i < CASES; i++) {
             Krypt04McgConfig config = randomConfig(random);
@@ -63,6 +64,12 @@ final class Krypt04McgConfigFuzzTest {
         } catch (PatternSyntaxException expected) {
             assertNotNull(expected.getMessage());
         }
+    }
+
+    private static Random random(String testName) {
+        long seed = SEED_RANDOM.nextLong();
+        System.out.println(Krypt04McgConfigFuzzTest.class.getSimpleName() + "." + testName + " seed=" + seed);
+        return new Random(seed);
     }
 
     private static Krypt04McgConfig randomConfig(Random random) {

@@ -130,11 +130,11 @@ public final class KeyStoreService {
     }
 
     private String readImportData(String dataOrFile) throws IOException {
-        Optional<Path> importFile = findImportFile(dataOrFile);
+        String trimmed = stripWrappingQuotes(dataOrFile.trim());
+        Optional<Path> importFile = findImportFile(trimmed);
         if (importFile.isPresent()) {
             return Files.readString(importFile.get(), StandardCharsets.UTF_8);
         }
-        String trimmed = dataOrFile.trim();
         if (trimmed.startsWith("{")) {
             return trimmed;
         }
@@ -143,6 +143,17 @@ public final class KeyStoreService {
         } catch (IllegalArgumentException e) {
             throw new IOException("Import data is neither a readable file nor valid Base64URL public key data: " + dataOrFile, e);
         }
+    }
+
+    private static String stripWrappingQuotes(String value) {
+        if (value.length() >= 2) {
+            char first = value.charAt(0);
+            char last = value.charAt(value.length() - 1);
+            if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                return value.substring(1, value.length() - 1);
+            }
+        }
+        return value;
     }
 
     private Optional<Path> findImportFile(String dataOrFile) {

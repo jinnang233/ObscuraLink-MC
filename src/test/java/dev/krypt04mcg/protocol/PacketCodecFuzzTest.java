@@ -5,6 +5,7 @@ import dev.krypt04mcg.model.EncryptedPacket;
 import dev.krypt04mcg.model.PacketType;
 import org.junit.jupiter.api.Test;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -13,13 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class PacketCodecFuzzTest {
-    private static final long SEED = 0x4B5259505430344CL;
+    private static final SecureRandom SEED_RANDOM = new SecureRandom();
     private static final int CASES = 250;
 
     @Test
     void randomizedPacketsRoundTrip() {
         PacketCodec codec = new PacketCodec();
-        Random random = new Random(SEED);
+        Random random = random("randomizedPacketsRoundTrip");
 
         for (int i = 0; i < CASES; i++) {
             EncryptedPacket packet = randomPacket(random);
@@ -33,7 +34,7 @@ final class PacketCodecFuzzTest {
     @Test
     void truncatedPacketsAreRejected() {
         PacketCodec codec = new PacketCodec();
-        Random random = new Random(SEED ^ 0x5EEDL);
+        Random random = random("truncatedPacketsAreRejected");
 
         for (int i = 0; i < CASES; i++) {
             byte[] encoded = codec.encode(randomPacket(random));
@@ -52,6 +53,12 @@ final class PacketCodecFuzzTest {
                 (short) (1 + random.nextInt(Short.MAX_VALUE)), randomAlgorithms(random),
                 randomBytes(random, random.nextInt(33)), randomBytes(random, random.nextInt(257)),
                 randomBytes(random, random.nextInt(513)), randomBytes(random, random.nextInt(129)));
+    }
+
+    private static Random random(String testName) {
+        long seed = SEED_RANDOM.nextLong();
+        System.out.println(PacketCodecFuzzTest.class.getSimpleName() + "." + testName + " seed=" + seed);
+        return new Random(seed);
     }
 
     private static AlgorithmSuite randomAlgorithms(Random random) {

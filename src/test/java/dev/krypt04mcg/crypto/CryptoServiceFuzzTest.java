@@ -7,6 +7,7 @@ import dev.krypt04mcg.model.PublicIdentity;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.security.SecureRandom;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class CryptoServiceFuzzTest {
-    private static final long SEED = 0x43525950544FL;
+    private static final SecureRandom SEED_RANDOM = new SecureRandom();
     private static final int CASES = 18;
 
     private static CryptoService crypto;
@@ -31,7 +32,7 @@ final class CryptoServiceFuzzTest {
 
     @Test
     void randomizedKemMessagesRoundTrip() throws Exception {
-        Random random = new Random(SEED);
+        Random random = random("randomizedKemMessagesRoundTrip");
 
         for (int i = 0; i < CASES; i++) {
             String message = randomMessage(random);
@@ -49,7 +50,7 @@ final class CryptoServiceFuzzTest {
 
     @Test
     void randomizedSessionMessagesRoundTrip() throws Exception {
-        Random random = new Random(SEED ^ 0x51514CL);
+        Random random = random("randomizedSessionMessagesRoundTrip");
 
         for (int i = 0; i < CASES; i++) {
             byte[] sessionSecret = randomBytes(random, 32);
@@ -69,7 +70,7 @@ final class CryptoServiceFuzzTest {
 
     @Test
     void randomizedTamperingIsRejected() throws Exception {
-        Random random = new Random(SEED ^ 0x7A6D70L);
+        Random random = random("randomizedTamperingIsRejected");
 
         for (int i = 0; i < CASES; i++) {
             EncryptedPacket packet = crypto.encryptFor(publicIdentity(bob), alice, "alice",
@@ -87,7 +88,7 @@ final class CryptoServiceFuzzTest {
 
     @Test
     void randomizedSignaturesVerifyOnlyOriginalInput() throws Exception {
-        Random random = new Random(SEED ^ 0x5141L);
+        Random random = random("randomizedSignaturesVerifyOnlyOriginalInput");
 
         for (int i = 0; i < CASES; i++) {
             byte[] input = randomBytes(random, random.nextInt(512));
@@ -135,6 +136,12 @@ final class CryptoServiceFuzzTest {
                 packet.receiver(), packet.timestampMillis(), messageId, packet.aadFragmentIndex(),
                 packet.aadFragmentTotal(), packet.algorithms(), nonce, packet.kemCiphertext(), ciphertext,
                 signature);
+    }
+
+    private static Random random(String testName) {
+        long seed = SEED_RANDOM.nextLong();
+        System.out.println(CryptoServiceFuzzTest.class.getSimpleName() + "." + testName + " seed=" + seed);
+        return new Random(seed);
     }
 
     private static String randomMessage(Random random) {

@@ -65,6 +65,21 @@ final class KeyStoreServiceTest {
         assertEquals(peer.signaturePublicKey().fingerprint(), found.signaturePublicKey().fingerprint());
     }
 
+    @Test
+    void importsPublicIdentityFromQuotedConfigRelativeFile() throws Exception {
+        CryptoService cryptoService = new CryptoService();
+        KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
+        keyStoreService.init("alice", "alice-uuid");
+        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("foerdi", "foerdi-uuid");
+        PublicIdentity peer = publicIdentity(peerKeys);
+
+        Files.writeString(tempDir.resolve("foerdi quoted.json"), JsonSupport.prettyGson().toJson(peer));
+        keyStoreService.importPublicIdentity("foerdi", "\"foerdi quoted.json\"");
+
+        PublicIdentity found = keyStoreService.findPublicIdentity("foerdi").orElseThrow();
+        assertEquals(peer.signaturePublicKey().fingerprint(), found.signaturePublicKey().fingerprint());
+    }
+
     private static PublicIdentity publicIdentity(LocalKeyMaterial material) {
         return new PublicIdentity(material.kemPublicKey().owner(), material.kemPublicKey().uuid(),
                 material.kemPublicKey(), material.signaturePublicKey());

@@ -11,15 +11,15 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class KeyStoreServiceFuzzTest {
-    private static final long SEED = 0x4B455953544F5245L;
+    private static final SecureRandom SEED_RANDOM = new SecureRandom();
     private static final int CASES = 36;
 
     @TempDir
@@ -33,7 +33,7 @@ final class KeyStoreServiceFuzzTest {
         PublicIdentity peer = publicIdentity(cryptoService.generateLocalKeys("peer", "peer-uuid"));
         String json = JsonSupport.prettyGson().toJson(peer);
         String encoded = Base64Url.encode(json.getBytes(StandardCharsets.UTF_8));
-        Random random = new Random(SEED);
+        Random random = random("randomizedPublicIdentityImportsRoundTrip");
 
         for (int i = 0; i < CASES; i++) {
             String player = randomPlayer(random);
@@ -55,13 +55,14 @@ final class KeyStoreServiceFuzzTest {
         keyStoreService.init("alice", "alice-uuid");
         PublicIdentity peer = publicIdentity(cryptoService.generateLocalKeys("disk-peer", "disk-peer-uuid"));
         String json = JsonSupport.prettyGson().toJson(peer);
-        Random random = new Random(SEED ^ 0x46494C45L);
+        Random random = random("randomizedConfigRelativeFileImportsRoundTrip");
 
         for (int i = 0; i < 12; i++) {
             String fileName = "import-" + i + "-" + randomSafeName(random) + ".json";
             Files.writeString(tempDir.resolve(fileName), json, StandardCharsets.UTF_8);
+            String importPath = random.nextBoolean() ? fileName : "\"" + fileName + "\"";
 
-            PublicIdentity imported = keyStoreService.importPublicIdentity(randomPlayer(random), fileName);
+            PublicIdentity imported = keyStoreService.importPublicIdentity(randomPlayer(random), importPath);
 
             assertEquals(peer.kemPublicKey().fingerprint(), imported.kemPublicKey().fingerprint());
         }
@@ -73,7 +74,7 @@ final class KeyStoreServiceFuzzTest {
         KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
         keyStoreService.init("alice", "alice-uuid");
         int before = publicFileCount();
-        Random random = new Random(SEED ^ 0xBADL);
+        Random random = random("randomizedMalformedImportsAreRejectedWithoutWritingPublicKeys");
 
         for (int i = 0; i < CASES; i++) {
             String player = "bad-" + i + "-" + randomSafeName(random);
@@ -110,6 +111,12 @@ final class KeyStoreServiceFuzzTest {
 
     private Path publicDir() {
         return tempDir.resolve("keys").resolve("public");
+    }
+
+    private static Random random(String testName) {
+        long seed = SEED_RANDOM.nextLong();
+        System.out.println(KeyStoreServiceFuzzTest.class.getSimpleName() + "." + testName + " seed=" + seed);
+        return new Random(seed);
     }
 
     private static String randomPlayer(Random random) {
