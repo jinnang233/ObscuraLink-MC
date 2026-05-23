@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class KeyStoreServiceTest {
@@ -78,6 +79,22 @@ final class KeyStoreServiceTest {
 
         PublicIdentity found = keyStoreService.findPublicIdentity("casey").orElseThrow();
         assertEquals(peer.signaturePublicKey().fingerprint(), found.signaturePublicKey().fingerprint());
+    }
+
+    @Test
+    void rejectsConfigRelativeImportPathTraversal() throws Exception {
+        CryptoService cryptoService = new CryptoService();
+        KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
+        keyStoreService.init("alice", "alice-uuid");
+        Path outside = Files.createTempFile("krypt04mcg-outside-", ".json");
+        try {
+            Files.writeString(outside, "{}");
+            String traversal = tempDir.relativize(outside).toString();
+
+            assertThrows(Exception.class, () -> keyStoreService.importPublicIdentity("casey", traversal));
+        } finally {
+            Files.deleteIfExists(outside);
+        }
     }
 
     private static PublicIdentity publicIdentity(LocalKeyMaterial material) {

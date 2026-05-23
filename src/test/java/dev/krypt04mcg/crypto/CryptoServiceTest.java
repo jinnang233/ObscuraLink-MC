@@ -6,7 +6,11 @@ import dev.krypt04mcg.model.PacketType;
 import dev.krypt04mcg.model.PublicIdentity;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.security.SecureRandom;
+import java.util.zip.Deflater;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -103,8 +107,45 @@ final class CryptoServiceTest {
                 crypto.decryptWithSession(packet, bob, publicIdentity(alice), wrongSecret));
     }
 
+    @Test
+    void oversizedPlaintextEncryptionIsRejected() throws Exception {
+        CryptoService crypto = new CryptoService();
+        LocalKeyMaterial alice = crypto.generateLocalKeys("alice", "alice-uuid");
+        LocalKeyMaterial bob = crypto.generateLocalKeys("bob", "bob-uuid");
+        String message = "A".repeat(CryptoService.MAX_PLAINTEXT_BYTES + 1);
+
+        assertThrows(CryptoException.class, () ->
+                crypto.encryptFor(publicIdentity(bob), alice, "alice", message, true, true));
+    }
+
+    @Test
+    void oversizedCompressedPayloadInflationIsRejected() throws Exception {
+        Method inflate = CryptoService.class.getDeclaredMethod("inflate", byte[].class);
+        inflate.setAccessible(true);
+        byte[] compressed = deflate("A".repeat(CryptoService.MAX_PLAINTEXT_BYTES + 1).getBytes());
+
+        InvocationTargetException exception = assertThrows(InvocationTargetException.class, () ->
+                inflate.invoke(null, (Object) compressed));
+
+        assertTrue(exception.getCause() instanceof CryptoException);
+    }
+
     private static PublicIdentity publicIdentity(LocalKeyMaterial material) {
         return new PublicIdentity(material.kemPublicKey().owner(), material.kemPublicKey().uuid(),
                 material.kemPublicKey(), material.signaturePublicKey());
+    }
+
+    private static byte[] deflate(byte[] plaintext) {
+        Deflater deflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
+        deflater.setInput(plaintext);
+        deflater.finish();
+        byte[] buffer = new byte[512];
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while (!deflater.finished()) {
+            int count = deflater.deflate(buffer);
+            out.write(buffer, 0, count);
+        }
+        deflater.end();
+        return out.toByteArray();
     }
 }

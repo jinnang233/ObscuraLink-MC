@@ -72,6 +72,9 @@ public final class KeyStoreService {
     public PublicIdentity importPublicIdentity(String player, String dataOrFile) throws IOException {
         String json = readImportData(dataOrFile);
         PublicIdentity incoming = parsePublicIdentity(json);
+        if (incoming.owner() == null || !incoming.owner().equalsIgnoreCase(player)) {
+            throw new IOException("Imported public key owner does not match player " + player);
+        }
         String normalized = normalize(player);
         Path path = keysDir.resolve("public").resolve(normalized + ".json");
         if (Files.exists(path)) {
@@ -159,10 +162,10 @@ public final class KeyStoreService {
     private Optional<Path> findImportFile(String dataOrFile) {
         List<Path> candidates;
         try {
+            Path input = Path.of(dataOrFile);
             candidates = List.of(
-                    Path.of(dataOrFile),
-                    root.resolve(dataOrFile),
-                    keysDir.resolve("public").resolve(dataOrFile)
+                    input.isAbsolute() ? input.normalize() : safeResolve(root, dataOrFile),
+                    safeResolve(keysDir.resolve("public"), dataOrFile)
             );
         } catch (InvalidPathException e) {
             return Optional.empty();
@@ -173,6 +176,15 @@ public final class KeyStoreService {
             }
         }
         return Optional.empty();
+    }
+
+    private static Path safeResolve(Path base, String child) {
+        Path normalizedBase = base.toAbsolutePath().normalize();
+        Path resolved = normalizedBase.resolve(child).normalize();
+        if (!resolved.startsWith(normalizedBase)) {
+            throw new InvalidPathException(child, "Path escapes import directory");
+        }
+        return resolved;
     }
 
     private PublicIdentity parsePublicIdentity(String json) throws IOException {

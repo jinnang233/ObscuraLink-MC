@@ -36,11 +36,10 @@ final class KeyStoreServiceFuzzTest {
         Random random = random("randomizedPublicIdentityImportsRoundTrip");
 
         for (int i = 0; i < CASES; i++) {
-            String player = randomPlayer(random);
             String importData = random.nextBoolean() ? json : encoded;
 
-            PublicIdentity imported = keyStoreService.importPublicIdentity(player, importData);
-            PublicIdentity found = keyStoreService.findPublicIdentity(player).orElseThrow();
+            PublicIdentity imported = keyStoreService.importPublicIdentity(peer.owner(), importData);
+            PublicIdentity found = keyStoreService.findPublicIdentity(peer.owner()).orElseThrow();
 
             assertEquals(peer.kemPublicKey().fingerprint(), imported.kemPublicKey().fingerprint());
             assertEquals(peer.signaturePublicKey().fingerprint(), found.signaturePublicKey().fingerprint());
@@ -62,7 +61,7 @@ final class KeyStoreServiceFuzzTest {
             Files.writeString(tempDir.resolve(fileName), json, StandardCharsets.UTF_8);
             String importPath = random.nextBoolean() ? fileName : "\"" + fileName + "\"";
 
-            PublicIdentity imported = keyStoreService.importPublicIdentity(randomPlayer(random), importPath);
+            PublicIdentity imported = keyStoreService.importPublicIdentity(peer.owner(), importPath);
 
             assertEquals(peer.kemPublicKey().fingerprint(), imported.kemPublicKey().fingerprint());
         }
@@ -91,8 +90,8 @@ final class KeyStoreServiceFuzzTest {
         CryptoService cryptoService = new CryptoService();
         KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
         keyStoreService.init("alice", "alice-uuid");
-        PublicIdentity first = publicIdentity(cryptoService.generateLocalKeys("first", "first-uuid"));
-        PublicIdentity second = publicIdentity(cryptoService.generateLocalKeys("second", "second-uuid"));
+        PublicIdentity first = publicIdentity(cryptoService.generateLocalKeys("same-player", "first-uuid"));
+        PublicIdentity second = publicIdentity(cryptoService.generateLocalKeys("same-player", "second-uuid"));
         String firstJson = JsonSupport.prettyGson().toJson(first);
         String secondJson = JsonSupport.prettyGson().toJson(second);
 
@@ -101,6 +100,17 @@ final class KeyStoreServiceFuzzTest {
         assertThrows(Exception.class, () -> keyStoreService.importPublicIdentity("same-player", secondJson));
         assertEquals(first.kemPublicKey().fingerprint(),
                 keyStoreService.findPublicIdentity("same-player").orElseThrow().kemPublicKey().fingerprint());
+    }
+
+    @Test
+    void ownerMismatchesAreRejected() throws Exception {
+        CryptoService cryptoService = new CryptoService();
+        KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
+        keyStoreService.init("alice", "alice-uuid");
+        PublicIdentity peer = publicIdentity(cryptoService.generateLocalKeys("mallory", "mallory-uuid"));
+        String json = JsonSupport.prettyGson().toJson(peer);
+
+        assertThrows(Exception.class, () -> keyStoreService.importPublicIdentity("bob", json));
     }
 
     private int publicFileCount() throws Exception {

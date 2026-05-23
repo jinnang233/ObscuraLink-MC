@@ -45,6 +45,7 @@ public final class CryptoService {
     public static final int MESSAGE_ID_BYTES = 16;
     public static final byte FLAG_SIGNED = 0x01;
     public static final byte FLAG_COMPRESSED = 0x02;
+    public static final int MAX_PLAINTEXT_BYTES = 64 * 1024;
     private static final int NONCE_BYTES = 12;
     private static final int AES_KEY_BYTES = 32;
     private static final int GCM_TAG_BITS = 128;
@@ -110,6 +111,7 @@ public final class CryptoService {
             byte[] derivedKey = hkdf(kemSecret.getEncoded(), messageId, "krypt04mcg message aead".getBytes(StandardCharsets.UTF_8), AES_KEY_BYTES);
             byte[] nonce = randomNonce();
             byte[] plaintext = message.getBytes(StandardCharsets.UTF_8);
+            ensurePlaintextSize(plaintext);
             byte flags = (byte) ((sign ? FLAG_SIGNED : 0) | (compress ? FLAG_COMPRESSED : 0));
             byte[] payload = compress ? deflate(plaintext) : plaintext;
 
@@ -141,6 +143,7 @@ public final class CryptoService {
             byte[] derivedKey = deriveSessionSecret(sessionSecret, messageId);
             byte[] nonce = randomNonce();
             byte[] plaintext = message.getBytes(StandardCharsets.UTF_8);
+            ensurePlaintextSize(plaintext);
             byte flags = (byte) ((sign ? FLAG_SIGNED : 0) | (compress ? FLAG_COMPRESSED : 0));
             byte[] payload = compress ? deflate(plaintext) : plaintext;
 
@@ -270,6 +273,12 @@ public final class CryptoService {
         return nonce;
     }
 
+    private static void ensurePlaintextSize(byte[] plaintext) throws CryptoException {
+        if (plaintext.length > MAX_PLAINTEXT_BYTES) {
+            throw new CryptoException("Plaintext message is too large: " + plaintext.length);
+        }
+    }
+
     private static PublicKey decodePublicKey(String algorithm, String base64) throws GeneralSecurityException {
         return KeyFactory.getInstance(algorithm, BCPQC).generatePublic(new X509EncodedKeySpec(Base64Url.decode(base64)));
     }
@@ -343,6 +352,9 @@ public final class CryptoService {
                 if (count == 0) {
                     throw new CryptoException("Compressed message is truncated or invalid");
                 } else {
+                    if (out.size() + count > MAX_PLAINTEXT_BYTES) {
+                        throw new CryptoException("Compressed message expands beyond limit");
+                    }
                     out.write(buffer, 0, count);
                 }
             }
