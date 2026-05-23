@@ -22,8 +22,10 @@ import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ import java.util.regex.Pattern;
 public final class Krypt04McgMod implements ClientModInitializer {
     public static final String MOD_ID = "krypt04mcg";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    private static final String DISCLAIMER_MESSAGE = "Krypt04Mcg is experimental. Do not use it in production or to protect sensitive data; scan downloaded artifacts with VirusTotal before use.";
 
     private static Krypt04McgMod instance;
 
@@ -107,6 +110,7 @@ public final class Krypt04McgMod implements ClientModInitializer {
                     .ifPresent(value -> chatReceiveHandler.handle(value.player(), value.message()));
             return shadowMessage.map(value -> !chatReceiveHandler.shouldHide(value.message())).orElse(true);
         });
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, joinedClient) -> showDisclaimer(joinedClient));
         LOGGER.info("Krypt04Mcg initialized");
     }
 
@@ -130,6 +134,17 @@ public final class Krypt04McgMod implements ClientModInitializer {
         client.execute(() -> {
             if (client.gui != null) {
                 client.gui.getChat().addClientSystemMessage(Component.literal(message));
+            }
+        });
+    }
+
+    private void showDisclaimer(Minecraft client) {
+        LOGGER.debug(DISCLAIMER_MESSAGE);
+        client.execute(() -> {
+            if (client.gui != null) {
+                client.gui.getChat().addClientSystemMessage(Component.empty()
+                        .append(Component.literal("[Krypt04Mcg] ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
+                        .append(Component.literal(DISCLAIMER_MESSAGE).withStyle(ChatFormatting.GOLD)));
             }
         });
     }
