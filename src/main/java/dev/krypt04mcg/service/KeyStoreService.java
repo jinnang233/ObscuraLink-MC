@@ -12,6 +12,7 @@ import dev.krypt04mcg.util.JsonSupport;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -145,11 +146,16 @@ public final class KeyStoreService {
     }
 
     private Optional<Path> findImportFile(String dataOrFile) {
-        List<Path> candidates = List.of(
-                Path.of(dataOrFile),
-                root.resolve(dataOrFile),
-                keysDir.resolve("public").resolve(dataOrFile)
-        );
+        List<Path> candidates;
+        try {
+            candidates = List.of(
+                    Path.of(dataOrFile),
+                    root.resolve(dataOrFile),
+                    keysDir.resolve("public").resolve(dataOrFile)
+            );
+        } catch (InvalidPathException e) {
+            return Optional.empty();
+        }
         for (Path candidate : candidates) {
             if (Files.isRegularFile(candidate)) {
                 return Optional.of(candidate);
