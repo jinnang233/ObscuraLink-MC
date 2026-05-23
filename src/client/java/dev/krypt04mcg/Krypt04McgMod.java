@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public final class Krypt04McgMod implements ClientModInitializer {
     public static final String MOD_ID = "krypt04mcg";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-    private static final String DISCLAIMER_MESSAGE = "Krypt04Mcg is experimental. Do not use it in production or to protect sensitive data; scan downloaded artifacts with VirusTotal before use.";
+    private static final String DISCLAIMER_KEY = "text.krypt04mcg.warning.disclaimer";
 
     private static Krypt04McgMod instance;
 
@@ -139,12 +139,12 @@ public final class Krypt04McgMod implements ClientModInitializer {
     }
 
     private void showDisclaimer(Minecraft client) {
-        LOGGER.debug(DISCLAIMER_MESSAGE);
+        LOGGER.debug(ClientMessages.tr(DISCLAIMER_KEY));
         client.execute(() -> {
             if (client.gui != null) {
                 client.gui.getChat().addClientSystemMessage(Component.empty()
                         .append(Component.literal("[Krypt04Mcg] ").withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
-                        .append(Component.literal(DISCLAIMER_MESSAGE).withStyle(ChatFormatting.GOLD)));
+                        .append(Component.translatable(DISCLAIMER_KEY).withStyle(ChatFormatting.GOLD)));
             }
         });
     }

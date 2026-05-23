@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "Nicht unterstützter Vertrauensstatus: %s.",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[FEHLER] Fingerabdruck passt nicht zu %s.",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][FEHLER] Schlüsselinitialisierung fehlgeschlagen. Verschlüsselter Chat ist deaktiviert; prüfe das Client-Log.",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg ist experimentell. Nutze es nicht in Produktionsumgebungen oder zum Schutz sensibler Daten; scanne heruntergeladene Dateien vor der Nutzung mit VirusTotal.",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] Sitzung mit %s hergestellt.",
   "text.krypt04mcg.error.session_exchange_unsigned": "Sitzungsaustausch-Nutzdaten sind nicht signiert.",
   "text.krypt04mcg.error.session_exchange_invalid": "Sitzungsaustausch-Nutzdaten sind ungültig.",

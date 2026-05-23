@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "不支援的信任狀態：%s。",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[錯誤] 指紋與 %s 不相符。",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][錯誤] 金鑰初始化失敗。加密聊天已停用，請檢查用戶端日誌。",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg 是實驗性專案。請勿在生產環境中使用，也不要用於保護敏感資料；使用前請盡量用 VirusTotal 掃描下載的檔案。",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] 已與 %s 建立會話。",
   "text.krypt04mcg.error.session_exchange_unsigned": "會話交換載荷未簽名。",
   "text.krypt04mcg.error.session_exchange_invalid": "會話交換載荷無效。",

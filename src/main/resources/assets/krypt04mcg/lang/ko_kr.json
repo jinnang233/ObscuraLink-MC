@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "지원하지 않는 신뢰 상태: %s.",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[오류] 지문이 %s와 일치하지 않습니다.",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][오류] 키 초기화에 실패했습니다. 암호화 채팅이 비활성화되었습니다. 클라이언트 로그를 확인하세요.",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg는 실험적인 프로젝트입니다. 프로덕션 환경이나 민감한 데이터 보호에 사용하지 마세요. 사용 전에 다운로드한 파일을 VirusTotal로 스캔하세요.",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] %s와 세션을 설정했습니다.",
   "text.krypt04mcg.error.session_exchange_unsigned": "세션 교환 페이로드가 서명되지 않았습니다.",
   "text.krypt04mcg.error.session_exchange_invalid": "세션 교환 페이로드가 올바르지 않습니다.",

@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "État de confiance non pris en charge : %s.",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[ERREUR] l’empreinte ne correspond pas à %s.",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][ERREUR] Échec de l’initialisation des clés. Le chat chiffré est désactivé; consultez le journal client.",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg est expérimental. Ne l’utilisez pas en production ni pour protéger des données sensibles; analysez les fichiers téléchargés avec VirusTotal avant utilisation.",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] Session établie avec %s.",
   "text.krypt04mcg.error.session_exchange_unsigned": "La charge utile d’échange de session n’est pas signée.",
   "text.krypt04mcg.error.session_exchange_invalid": "La charge utile d’échange de session est invalide.",

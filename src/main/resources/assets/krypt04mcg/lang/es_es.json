@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "Estado de confianza no compatible: %s.",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[ERROR] la huella no coincide con %s.",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][ERROR] Falló la inicialización de claves. El chat cifrado está desactivado; revisa el registro del cliente.",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg es experimental. No lo uses en producción ni para proteger datos sensibles; escanea los archivos descargados con VirusTotal antes de usarlos.",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] Sesión establecida con %s.",
   "text.krypt04mcg.error.session_exchange_unsigned": "La carga de intercambio de sesión no está firmada.",
   "text.krypt04mcg.error.session_exchange_invalid": "La carga de intercambio de sesión no es válida.",

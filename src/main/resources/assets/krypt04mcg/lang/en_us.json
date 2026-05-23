@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "Unsupported trust state: %s.",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[ERROR] fingerprint does not match %s.",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][ERROR] Key initialization failed. Encrypted chat is disabled; check the client log.",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg is experimental. Do not use it in production or to protect sensitive data; scan downloaded artifacts with VirusTotal before use.",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] Session established with %s.",
   "text.krypt04mcg.error.session_exchange_unsigned": "Session exchange payload is not signed.",
   "text.krypt04mcg.error.session_exchange_invalid": "Session exchange payload is invalid.",

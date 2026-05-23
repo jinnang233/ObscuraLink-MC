@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "不支持的信任状态：%s。",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[错误] 指纹与 %s 不匹配。",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][错误] 密钥初始化失败。加密聊天已禁用，请检查客户端日志。",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg 是实验性项目。请勿在生产环境中使用，也不要用于保护敏感数据；使用前请尽量用 VirusTotal 扫描下载的文件。",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] 已与 %s 建立会话。",
   "text.krypt04mcg.error.session_exchange_unsigned": "会话交换载荷未签名。",
   "text.krypt04mcg.error.session_exchange_invalid": "会话交换载荷无效。",

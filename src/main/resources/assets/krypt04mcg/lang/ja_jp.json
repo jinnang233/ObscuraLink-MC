@@ -100,6 +100,7 @@
   "text.krypt04mcg.command.error.unsupported_trust_state": "未対応の信頼状態: %s。",
   "text.krypt04mcg.command.error.fingerprint_mismatch": "[エラー] 指紋が %s と一致しません。",
   "text.krypt04mcg.error.key_init_failed": "[Krypt04Mcg][エラー] 鍵の初期化に失敗しました。暗号化チャットは無効です。クライアントログを確認してください。",
+  "text.krypt04mcg.warning.disclaimer": "Krypt04Mcg は実験的なプロジェクトです。本番環境や機密データの保護には使用しないでください。使用前にダウンロードしたファイルを VirusTotal でスキャンしてください。",
   "text.krypt04mcg.session_accepted": "[Krypt04Mcg] %s とのセッションを確立しました。",
   "text.krypt04mcg.error.session_exchange_unsigned": "セッション交換ペイロードが署名されていません。",
   "text.krypt04mcg.error.session_exchange_invalid": "セッション交換ペイロードが無効です。",
