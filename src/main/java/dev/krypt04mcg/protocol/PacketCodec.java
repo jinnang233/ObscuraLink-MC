@@ -13,6 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public final class PacketCodec {
+    private static final int MAX_STRING_BYTES = 4096;
+    private static final int MAX_BYTES32_FIELD_BYTES = 1024 * 1024;
+
     public byte[] encode(EncryptedPacket packet) {
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -124,6 +127,9 @@ public final class PacketCodec {
 
     private static String readString(DataInputStream in) throws IOException {
         int length = in.readUnsignedShort();
+        if (length > MAX_STRING_BYTES) {
+            throw new IOException("String field too long: " + length);
+        }
         return new String(readExact(in, length, "string"), StandardCharsets.UTF_8);
     }
 
@@ -157,6 +163,9 @@ public final class PacketCodec {
         int length = in.readInt();
         if (length < 0) {
             throw new IOException("Negative length");
+        }
+        if (length > MAX_BYTES32_FIELD_BYTES) {
+            throw new IOException("Field too long: " + length);
         }
         return readExact(in, length, "bytes32");
     }

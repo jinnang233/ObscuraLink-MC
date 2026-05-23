@@ -40,13 +40,13 @@ final class KeyStoreServiceTest {
         CryptoService cryptoService = new CryptoService();
         KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
         keyStoreService.init("alice", "alice-uuid");
-        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("foerdi", "foerdi-uuid");
+        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("casey", "casey-uuid");
         PublicIdentity peer = publicIdentity(peerKeys);
 
         Path publicDir = tempDir.resolve("keys").resolve("public");
-        Files.writeString(publicDir.resolve("foerdi-public.json"), JsonSupport.prettyGson().toJson(peer));
+        Files.writeString(publicDir.resolve("casey-public.json"), JsonSupport.prettyGson().toJson(peer));
 
-        PublicIdentity found = keyStoreService.findPublicIdentity("foerdi").orElseThrow();
+        PublicIdentity found = keyStoreService.findPublicIdentity("casey").orElseThrow();
         assertEquals(peer.kemPublicKey().fingerprint(), found.kemPublicKey().fingerprint());
     }
 
@@ -55,13 +55,13 @@ final class KeyStoreServiceTest {
         CryptoService cryptoService = new CryptoService();
         KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
         keyStoreService.init("alice", "alice-uuid");
-        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("foerdi", "foerdi-uuid");
+        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("casey", "casey-uuid");
         PublicIdentity peer = publicIdentity(peerKeys);
 
-        Files.writeString(tempDir.resolve("foerdi.json"), JsonSupport.prettyGson().toJson(peer));
-        keyStoreService.importPublicIdentity("foerdi", "foerdi.json");
+        Files.writeString(tempDir.resolve("casey.json"), JsonSupport.prettyGson().toJson(peer));
+        keyStoreService.importPublicIdentity("casey", "casey.json");
 
-        PublicIdentity found = keyStoreService.findPublicIdentity("foerdi").orElseThrow();
+        PublicIdentity found = keyStoreService.findPublicIdentity("casey").orElseThrow();
         assertEquals(peer.signaturePublicKey().fingerprint(), found.signaturePublicKey().fingerprint());
     }
 
@@ -70,13 +70,13 @@ final class KeyStoreServiceTest {
         CryptoService cryptoService = new CryptoService();
         KeyStoreService keyStoreService = new KeyStoreService(tempDir, cryptoService);
         keyStoreService.init("alice", "alice-uuid");
-        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("foerdi", "foerdi-uuid");
+        LocalKeyMaterial peerKeys = cryptoService.generateLocalKeys("casey", "casey-uuid");
         PublicIdentity peer = publicIdentity(peerKeys);
 
-        Files.writeString(tempDir.resolve("foerdi quoted.json"), JsonSupport.prettyGson().toJson(peer));
-        keyStoreService.importPublicIdentity("foerdi", "\"foerdi quoted.json\"");
+        Files.writeString(tempDir.resolve("casey quoted.json"), JsonSupport.prettyGson().toJson(peer));
+        keyStoreService.importPublicIdentity("casey", "\"casey quoted.json\"");
 
-        PublicIdentity found = keyStoreService.findPublicIdentity("foerdi").orElseThrow();
+        PublicIdentity found = keyStoreService.findPublicIdentity("casey").orElseThrow();
         assertEquals(peer.signaturePublicKey().fingerprint(), found.signaturePublicKey().fingerprint());
     }
 

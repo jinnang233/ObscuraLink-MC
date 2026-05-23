@@ -38,6 +38,9 @@ public final class FragmentService {
         if (!isFragment(message)) {
             throw new IllegalArgumentException("Not a Krypt04Mcg fragment");
         }
+        if (message.length() > MAX_CHAT_MESSAGE_LENGTH) {
+            throw new IllegalArgumentException("Krypt04Mcg fragment exceeds Minecraft chat limit");
+        }
         String[] parts = message.split(" ", 5);
         if (parts.length != 5) {
             throw new IllegalArgumentException("Malformed Krypt04Mcg fragment");

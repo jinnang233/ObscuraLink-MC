@@ -5,6 +5,9 @@ import dev.krypt04mcg.model.EncryptedPacket;
 import dev.krypt04mcg.model.PacketType;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Random;
@@ -45,6 +48,20 @@ final class PacketCodecFuzzTest {
         }
     }
 
+    @Test
+    void oversizedLengthFieldsAreRejectedBeforeAllocation() throws Exception {
+        PacketCodec codec = new PacketCodec();
+        Random random = random("oversizedLengthFieldsAreRejectedBeforeAllocation");
+
+        for (int i = 0; i < CASES; i++) {
+            byte[] encoded = random.nextBoolean()
+                    ? packetWithOversizedSender(random)
+                    : packetWithOversizedKemCiphertext(random);
+
+            assertThrows(IllegalArgumentException.class, () -> codec.decode(encoded));
+        }
+    }
+
     private static EncryptedPacket randomPacket(Random random) {
         PacketType[] types = PacketType.values();
         return new EncryptedPacket((byte) random.nextInt(256), types[random.nextInt(types.length)],
@@ -53,6 +70,43 @@ final class PacketCodecFuzzTest {
                 (short) (1 + random.nextInt(Short.MAX_VALUE)), randomAlgorithms(random),
                 randomBytes(random, random.nextInt(33)), randomBytes(random, random.nextInt(257)),
                 randomBytes(random, random.nextInt(513)), randomBytes(random, random.nextInt(129)));
+    }
+
+    private static byte[] packetWithOversizedSender(Random random) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.writeByte(1);
+        out.writeByte(PacketType.KEM_MESSAGE.id());
+        out.writeByte(0);
+        out.writeShort(4097 + random.nextInt(65535 - 4097));
+        return bytes.toByteArray();
+    }
+
+    private static byte[] packetWithOversizedKemCiphertext(Random random) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.writeByte(1);
+        out.writeByte(PacketType.KEM_MESSAGE.id());
+        out.writeByte(0);
+        writeString(out, "alice");
+        writeString(out, "bob");
+        out.writeLong(random.nextLong());
+        out.write(randomBytes(random, 16));
+        out.writeShort(0);
+        out.writeShort(1);
+        writeString(out, "CMCE/mceliece348864");
+        writeString(out, "Falcon-512");
+        writeString(out, "AES-256-GCM");
+        writeString(out, "HKDF-SHA256");
+        out.writeShort(12);
+        out.write(randomBytes(random, 12));
+        out.writeInt(1024 * 1024 + 1 + random.nextInt(1024));
+        return bytes.toByteArray();
+    }
+
+    private static void writeString(DataOutputStream out, String value) throws IOException {
+        out.writeShort(value.length());
+        out.writeBytes(value);
     }
 
     private static Random random(String testName) {
