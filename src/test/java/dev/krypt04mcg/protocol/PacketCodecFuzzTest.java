@@ -1,0 +1,99 @@
+package dev.krypt04mcg.protocol;
+
+import dev.krypt04mcg.model.AlgorithmSuite;
+import dev.krypt04mcg.model.EncryptedPacket;
+import dev.krypt04mcg.model.PacketType;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+final class PacketCodecFuzzTest {
+    private static final long SEED = 0x4B5259505430344CL;
+    private static final int CASES = 250;
+
+    @Test
+    void randomizedPacketsRoundTrip() {
+        PacketCodec codec = new PacketCodec();
+        Random random = new Random(SEED);
+
+        for (int i = 0; i < CASES; i++) {
+            EncryptedPacket packet = randomPacket(random);
+
+            EncryptedPacket decoded = codec.decode(codec.encode(packet));
+
+            assertPacketEquals(packet, decoded);
+        }
+    }
+
+    @Test
+    void truncatedPacketsAreRejected() {
+        PacketCodec codec = new PacketCodec();
+        Random random = new Random(SEED ^ 0x5EEDL);
+
+        for (int i = 0; i < CASES; i++) {
+            byte[] encoded = codec.encode(randomPacket(random));
+            int cut = random.nextInt(encoded.length);
+            byte[] truncated = Arrays.copyOf(encoded, cut);
+
+            assertThrows(IllegalArgumentException.class, () -> codec.decode(truncated));
+        }
+    }
+
+    private static EncryptedPacket randomPacket(Random random) {
+        PacketType[] types = PacketType.values();
+        return new EncryptedPacket((byte) random.nextInt(256), types[random.nextInt(types.length)],
+                (byte) random.nextInt(256), randomName(random), randomName(random), random.nextLong(),
+                randomBytes(random, 16), (short) random.nextInt(Short.MAX_VALUE + 1),
+                (short) (1 + random.nextInt(Short.MAX_VALUE)), randomAlgorithms(random),
+                randomBytes(random, random.nextInt(33)), randomBytes(random, random.nextInt(257)),
+                randomBytes(random, random.nextInt(513)), randomBytes(random, random.nextInt(129)));
+    }
+
+    private static AlgorithmSuite randomAlgorithms(Random random) {
+        return new AlgorithmSuite(randomToken(random), randomToken(random), randomToken(random), randomToken(random));
+    }
+
+    private static String randomName(Random random) {
+        return randomAscii(random, random.nextInt(33));
+    }
+
+    private static String randomToken(Random random) {
+        return randomAscii(random, 1 + random.nextInt(32));
+    }
+
+    private static String randomAscii(Random random, int length) {
+        StringBuilder builder = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            builder.append((char) (32 + random.nextInt(95)));
+        }
+        return builder.toString();
+    }
+
+    private static byte[] randomBytes(Random random, int length) {
+        byte[] bytes = new byte[length];
+        random.nextBytes(bytes);
+        return bytes;
+    }
+
+    private static void assertPacketEquals(EncryptedPacket expected, EncryptedPacket actual) {
+        assertEquals(expected.protocolVersion(), actual.protocolVersion());
+        assertEquals(expected.type(), actual.type());
+        assertEquals(expected.flags(), actual.flags());
+        assertEquals(expected.sender(), actual.sender());
+        assertEquals(expected.receiver(), actual.receiver());
+        assertEquals(expected.timestampMillis(), actual.timestampMillis());
+        assertArrayEquals(expected.messageId(), actual.messageId());
+        assertEquals(expected.aadFragmentIndex(), actual.aadFragmentIndex());
+        assertEquals(expected.aadFragmentTotal(), actual.aadFragmentTotal());
+        assertEquals(expected.algorithms(), actual.algorithms());
+        assertArrayEquals(expected.nonce(), actual.nonce());
+        assertArrayEquals(expected.kemCiphertext(), actual.kemCiphertext());
+        assertArrayEquals(expected.ciphertext(), actual.ciphertext());
+        assertArrayEquals(expected.signature(), actual.signature());
+    }
+}

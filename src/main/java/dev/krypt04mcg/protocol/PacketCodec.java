@@ -124,7 +124,7 @@ public final class PacketCodec {
 
     private static String readString(DataInputStream in) throws IOException {
         int length = in.readUnsignedShort();
-        return new String(in.readNBytes(length), StandardCharsets.UTF_8);
+        return new String(readExact(in, length, "string"), StandardCharsets.UTF_8);
     }
 
     private static void writeBytes16(DataOutputStream out, byte[] bytes) throws IOException {
@@ -141,7 +141,7 @@ public final class PacketCodec {
 
     private static byte[] readBytes16(DataInputStream in) throws IOException {
         int length = in.readUnsignedShort();
-        return in.readNBytes(length);
+        return readExact(in, length, "bytes16");
     }
 
     private static void writeBytes32(DataOutputStream out, byte[] bytes) throws IOException {
@@ -158,7 +158,7 @@ public final class PacketCodec {
         if (length < 0) {
             throw new IOException("Negative length");
         }
-        return in.readNBytes(length);
+        return readExact(in, length, "bytes32");
     }
 
     private static void writeFixed(DataOutputStream out, byte[] bytes, int length, String field) throws IOException {
@@ -166,5 +166,13 @@ public final class PacketCodec {
             throw new IOException(field + " must be " + length + " bytes, got " + Arrays.toString(bytes));
         }
         out.write(bytes);
+    }
+
+    private static byte[] readExact(DataInputStream in, int length, String field) throws IOException {
+        byte[] bytes = in.readNBytes(length);
+        if (bytes.length != length) {
+            throw new IOException("Truncated " + field);
+        }
+        return bytes;
     }
 }
