@@ -109,6 +109,9 @@ public final class ChatReceiveHandler {
             if (packet.type() == PacketType.SESSION_MESSAGE) {
                 sessionService.recordMessage(packet.sender(), plaintext.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
             }
+            if (!decryptionHistoryService.recordAcceptedPacket(packet.sender(), packet.messageId(), packet.nonce())) {
+                throw new IllegalStateException("Replay or repeated nonce detected for " + packet.sender());
+            }
             if (tryAcceptSessionExchange(packet, sender, plaintext)) {
                 return;
             }
